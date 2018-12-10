@@ -19,17 +19,18 @@ public @interface ColumnInfo {
 	 * 
 	 * 值是 "",null 时不insert
 	 */
-	ObjTypeEnum[] noInsertVal() default { ObjTypeEnum.BLANK, ObjTypeEnum.NULL };
+	ObjTypeEnum[] insertValType() default { ObjTypeEnum.OBJ};
 
 	/**
 	 * 
 	 * 值是 "",null 时不update
 	 */
-	ObjTypeEnum[] noUpdateVal() default { ObjTypeEnum.BLANK, ObjTypeEnum.NULL };
+	ObjTypeEnum[] updateValType() default { ObjTypeEnum.OBJ };
 
 	/**
 	 * 时间字段格式化，如果是日期类型，需要格式化，则配置此字段
 	 */
 	String dateFormart() default "";
-
+	boolean isInsert() default true;
+	boolean isUpdate() default true;
 }

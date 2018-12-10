@@ -11,6 +11,7 @@ import java.util.Map;
 import com.ws.commons.algorithm.SequenceGenerate;
 import com.ws.commons.constant.CmpChar;
 import com.ws.commons.constant.ObjTypeEnum;
+import com.ws.commons.constant.ValTypeEnum;
 import com.ws.commons.tool.StrTool;
 import com.ws.mybatissmart.annotation.ColumnInfo;
 import com.ws.mybatissmart.annotation.TableInfo;
@@ -22,7 +23,7 @@ public class ClassMapperInfo {
 	private Field idField;
 	private String idColumnName;
 	private Class<?> clazz;
-	private LinkedHashMap<String, FieldMapperInfo> fieldsMapperMap;//key:columnName
+	private LinkedHashMap<String, FieldMapperInfo> fieldsMapperMap;// key:columnName
 
 	public Field getIdField() {
 		return idField;
@@ -74,6 +75,10 @@ public class ClassMapperInfo {
 		StringBuilder cvSb = new StringBuilder(" values(");
 		for (Map.Entry<String, FieldMapperInfo> en : fieldsMapperMap.entrySet()) {
 			fi = en.getValue().getField();
+			ci = en.getValue().getColumnInfo();
+			if(ci!=null&&!ci.isInsert()) {
+				continue;
+			}
 			if (fi.getName().equals(tableInfo.idFieldName()) && tableInfo.idtactics() == IdtacticsEnum.DFT) {
 				v = SequenceGenerate.nexId(tableInfo.value());
 				fi.setAccessible(true);
@@ -85,9 +90,8 @@ public class ClassMapperInfo {
 				cvSb.append(v).append(",");
 				continue;
 			}
-			ci = en.getValue().getColumnInfo();
 			v = ClassMapperInfo.adornSqlVal(obj, en.getValue());
-			if (ci == null || ci.noInsertVal().length == 0) {
+			if (ci == null || ci.insertValType().length == 0) {
 				/*
 				 * 不插入空字符串和null值、"null"、" "
 				 */
@@ -96,39 +100,15 @@ public class ClassMapperInfo {
 					cvSb.append(v).append(",");
 				}
 			} else {
-				List<ObjTypeEnum> otEs = ClassMapperInfo.arrayToList(ci.noInsertVal(), ObjTypeEnum.class);
+				List<ObjTypeEnum> otEs = ClassMapperInfo.arrayToList(ci.insertValType(), ObjTypeEnum.class);
 
+				if (otEs.contains(ObjTypeEnum.ALL)) {
+					clSb.append(en.getKey()).append(",");
+					cvSb.append(adornIfBlank(v)).append(",");
 				/*
 				 * 不插入空字符串和null值
 				 */
-				if (otEs.contains(ObjTypeEnum.BLANK) && otEs.contains(ObjTypeEnum.NULL)) {
-					if (StrTool.isNotEmpty(v)) {
-						clSb.append(en.getKey()).append(",");
-						cvSb.append(v).append(",");
-					}
-
-					/*
-					 * 不插入null值
-					 */
-				} else if (otEs.contains(ObjTypeEnum.NULL)) {
-					if (v != null) {
-						clSb.append(en.getKey()).append(",");
-						cvSb.append(v).append(",");
-					}
-
-					/*
-					 * 不插入空字符串
-					 */
-				} else if (otEs.contains(ObjTypeEnum.BLANK)) {
-					if (StrTool.isNotBlank(v)) {
-						clSb.append(en.getKey()).append(",");
-						cvSb.append(v).append(",");
-					}
-
-					/*
-					 * 不插入空字符串和null值、"null"、" "
-					 */
-				} else if (otEs.size() == 0) {
+				} else if (otEs.contains(ObjTypeEnum.OBJ)) {
 					if (StrTool.checkNotEmpty(v)) {
 						clSb.append(en.getKey()).append(",");
 						cvSb.append(v).append(",");
@@ -171,27 +151,21 @@ public class ClassMapperInfo {
 				continue;
 			}
 			ci = en.getValue().getColumnInfo();
+			if(ci!=null&&!ci.isUpdate()) {
+				continue;
+			}
 			fi.setAccessible(true);
 			v = ClassMapperInfo.adornSqlVal(obj, en.getValue());
-			if (ci == null || ci.noInsertVal().length == 0) {
+			if (ci == null || ci.updateValType().length == 0) {
 				if (StrTool.checkNotEmpty(v)) {
 					setSb.append(en.getKey()).append("=").append(v).append(",");
 				}
 			} else {
-				List<ObjTypeEnum> otEs = ClassMapperInfo.arrayToList(ci.noUpdateVal(), ObjTypeEnum.class);
-				if (otEs.contains(ObjTypeEnum.BLANK) && otEs.contains(ObjTypeEnum.NULL)) {
-					if (StrTool.isNotEmpty(v)) {
-						setSb.append(en.getKey()).append("=").append(v).append(",");
-					}
-				} else if (otEs.contains(ObjTypeEnum.NULL)) {
-					if (v != null) {
-						setSb.append(en.getKey()).append("=").append(v).append(",");
-					}
-				} else if (otEs.contains(ObjTypeEnum.BLANK)) {
-					if (StrTool.isNotBlank(v)) {
-						setSb.append(en.getKey()).append("=").append(v).append(",");
-					}
-				} else if (otEs.size() == 0) {
+				List<ObjTypeEnum> otEs = ClassMapperInfo.arrayToList(ci.updateValType(), ObjTypeEnum.class);
+				if (otEs.contains(ObjTypeEnum.ALL)) {
+					
+					setSb.append(en.getKey()).append("=").append(adornIfBlank(v)).append(",");
+				} else if (otEs.contains(ObjTypeEnum.OBJ)) {
 					if (StrTool.checkNotEmpty(v)) {
 						setSb.append(en.getKey()).append("=").append(v).append(",");
 					}
@@ -225,21 +199,21 @@ public class ClassMapperInfo {
 			if (!conds.isEmpty()) {
 				where.append(" where 1=1 ");
 				conds.forEach(cond -> {
-					String columnName=cond.getColumnName();
-					Object srcVal=cond.getVal();
-					CmpChar cmpChar=cond.getCmpChar();
+					String columnName = cond.getColumnName();
+					Object srcVal = cond.getVal();
+					CmpChar cmpChar = cond.getCmpChar();
 					FieldMapperInfo fim = this.fieldsMapperMap.get(columnName);
-					String val=null;
-					if(srcVal==null){
+					String val = null;
+					if (srcVal == null) {
 						try {
 							val = ClassMapperInfo.adornSqlVal(obj, fim);
 						} catch (Exception exc) {
 							exc.printStackTrace();
 						}
-					}else{
-						val=srcVal.toString();
+					} else {
+						val = srcVal.toString();
 					}
-			
+
 					if (StrTool.checkNotEmpty(val)) {
 						where.append(" and ").append(columnName).append(cmpChar.code);
 						if (cmpChar == CmpChar.like) {
@@ -270,30 +244,35 @@ public class ClassMapperInfo {
 		return sql.toString();
 	}
 
-	private static String adornSqlVal(Object srcObj, FieldMapperInfo fmi) throws IllegalArgumentException, IllegalAccessException {
+	private static String adornIfBlank(String val) {
+		return val.trim().length()==0?"'"+val+"'":val;
+	}
+	
+	
+	private static String adornSqlVal(Object srcObj, FieldMapperInfo fmi)
+			throws IllegalArgumentException, IllegalAccessException {
 		String v = null;
 		Field fi = fmi.getField();
 		Object srcVal;
-			fi.setAccessible(true);
-			srcVal = fi.get(srcObj);
-			if (srcVal != null) {
-				ColumnInfo ci = fmi.getColumnInfo();
-				if (fi.getType() == Date.class && ci.dateFormart().length() > 0) {
-					v = "'" + new SimpleDateFormat(ci.dateFormart()).format((Date) srcVal) + "'";
-				} else {
-					v = srcVal.toString();
-					if (v.length() > 0 && fi.getType() == String.class) {
-						// srcObj.dataMap.put(fi.getName(), v);
-						v = "#{" + fi.getName() + "}";
-						// v = "'" + v + "'";
-					}
-				}
+		fi.setAccessible(true);
+		srcVal = fi.get(srcObj);
+		if (srcVal != null) {
+			ColumnInfo ci = fmi.getColumnInfo();
+			if (fi.getType() == Date.class && ci.dateFormart().length() > 0) {
+				v = "'" + new SimpleDateFormat(ci.dateFormart()).format((Date) srcVal) + "'";
 			} else {
-				return ObjTypeEnum.NULL.code;
+				v = srcVal.toString();
+				if (v.length() > 0 && fi.getType() == String.class) {
+					// srcObj.dataMap.put(fi.getName(), v);
+					v = "#{" + fi.getName() + "}";
+					// v = "'" + v + "'";
+				}
 			}
+		} else {
+			return ValTypeEnum.NULL.code;
+		}
 		return v;
 	}
-
 
 	private String getColumns() {
 		StringBuilder cls = new StringBuilder();
