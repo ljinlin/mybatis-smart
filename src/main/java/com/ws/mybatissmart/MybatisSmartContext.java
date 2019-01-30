@@ -5,30 +5,34 @@ import static org.springframework.util.StringUtils.tokenizeToStringArray;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+
+import javax.sql.DataSource;
 
 import org.apache.ibatis.io.VFS;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ConfigurableApplicationContext;
 
 import com.ws.commons.tool.ClassTool;
 import com.ws.commons.tool.StrTool;
 import com.ws.mybatissmart.annotation.ColumnInfo;
+import com.ws.mybatissmart.annotation.RefTable;
 import com.ws.mybatissmart.annotation.TableInfo;
 
 public class MybatisSmartContext {
 
 	private static SqlSessionFactory sessionFactory;
 	private static MybatisSmartProperties mybatisSmartProperties;
+
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MybatisSmartAutoConfiguration.class);
 
@@ -38,9 +42,6 @@ public class MybatisSmartContext {
 
 	}
 
-	public static void main(String[] args) {
-		System.out.println(Object.class.getSuperclass());
-	}
 
 	public static final Map<Class<?>, ClassMapperInfo> MAPPERS_INFO = new HashMap<Class<?>, ClassMapperInfo>();
 
@@ -51,17 +52,26 @@ public class MybatisSmartContext {
 		} else {
 			cl = cl.getSuperclass();
 			while (cl != null && cl != Object.class && res == null) {
-				res = MAPPERS_INFO.get(cl.getSuperclass());
 				if(cl.getAnnotation(TableInfo.class)!=null) {
+					res = MAPPERS_INFO.get(cl.getSuperclass());
 					if(res==null){
 						return loadClassMapperInfo(cl);
 					}
 					return res;
+				}else {
+					RefTable refTable=cl.getAnnotation(RefTable.class);
+					if(refTable!=null) {
+						res = MAPPERS_INFO.get(refTable.value());
+						if(res==null){
+							return loadClassMapperInfo(cl);
+						}
+						return res;
+					}
 				}
 				cl = cl.getSuperclass();
 			}
 			throw new MybatisSmartException(
-					"Class:" + cl.getCanonicalName() + " 没有配置注解:" + TableInfo.class.getSimpleName());
+					"Class:" + cl.getCanonicalName() + " 没有配置或者没有关联注解:" + TableInfo.class.getSimpleName());
 		}
 	}
 
@@ -176,4 +186,43 @@ public class MybatisSmartContext {
 			}
 		}
 	}
+	
+	
+    /**
+     * 获取url
+     *
+     * @param dataSource
+     * @return
+     */
+    private static String getUrl(DataSource dataSource) {
+        Connection conn = null;
+        try {
+            conn = dataSource.getConnection();
+            return conn.getMetaData().getURL();
+        } catch (SQLException e) {
+            throw new MybatisSmartException(e.getMessage());
+        } finally {
+            if (conn != null) {
+                try {
+//                    if (closeConn) {
+                        conn.close();
+//                    }
+                } catch (SQLException e) {
+                    //ignore
+                }
+            }
+        }
+    }
+    
+    static String getDialect(DataSource dataSource){
+	  String url=getUrl(dataSource);
+	   DialectEnums[] enums=DialectEnums.values();
+	   for (DialectEnums dialectEnum : enums) {
+		if(url.indexOf(dialectEnum.name)!=-1) {
+			return dialectEnum.name;
+		}
+	}
+	   throw new MybatisSmartException("请设置数据库方言");
+    }
+
 }

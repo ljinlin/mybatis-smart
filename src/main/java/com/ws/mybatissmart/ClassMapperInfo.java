@@ -1,8 +1,10 @@
 package com.ws.mybatissmart;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -102,7 +104,8 @@ public class ClassMapperInfo {
 					cvSb.append(v).append(",");
 				}
 			} else {
-				List<ObjTypeEnum> otEs = ClassMapperInfo.arrayToList(ci.insertValType(), ObjTypeEnum.class);
+//				List<ObjTypeEnum> otEs = ClassMapperInfo.arrayToList(ci.insertValType(), ObjTypeEnum.class);
+				List<ObjTypeEnum> otEs = Arrays.asList(ci.insertValType());
 
 				if (otEs.contains(ObjTypeEnum.ALL)) {
 					clSb.append(en.getKey()).append(",");
@@ -163,7 +166,8 @@ public class ClassMapperInfo {
 					setSb.append(en.getKey()).append("=").append(v).append(",");
 				}
 			} else {
-				List<ObjTypeEnum> otEs = ClassMapperInfo.arrayToList(ci.updateValType(), ObjTypeEnum.class);
+//				List<ObjTypeEnum> otEs = ClassMapperInfo.arrayToList(ci.updateValType(), ObjTypeEnum.class);
+				List<ObjTypeEnum> otEs = Arrays.asList(ci.updateValType());
 				if (otEs.contains(ObjTypeEnum.ALL)) {
 					setSb.append(en.getKey()).append("=").append(adornIfEmpty(v)).append(",");
 				} else if (otEs.contains(ObjTypeEnum.OBJ)) {
@@ -234,6 +238,7 @@ public class ClassMapperInfo {
 
 		String limit = filterSqlBuild == null ? "" : filterSqlBuild.getLimit();
 		String orderBy = filterSqlBuild == null ? "" : filterSqlBuild.getOrderBy();
+		//if()
 		StringBuilder sql = new StringBuilder(" select  ").append(limit).append(" ").append(this.getColumns())
 				.append(" from ").append(tableInfo.value());
 		sql.append(where);
@@ -384,6 +389,9 @@ public class ClassMapperInfo {
 			sqlVal = boundSqlVal(srcVal, fieldName);
 			sqlVal = cexusCmp.code.concat(SPACE).concat(sqlVal);
 		} else if (cexusCmp == NexusCmp.in || cexusCmp == NexusCmp.not_in) {
+			if(srcVal.getClass().isArray()) {
+				srcVal=Arrays.asList((Object[])srcVal);
+			}
 			if (srcVal instanceof Collection) {
 				Collection<?> clt = (Collection<?>) srcVal;
 				StringBuilder inVal = new StringBuilder();
@@ -422,13 +430,16 @@ public class ClassMapperInfo {
 		return clsStr;
 	}
 
-	@SuppressWarnings("unchecked")
-	public static <E> List<E> arrayToList(Object[] ary, Class<E> E) {
-		List<E> list = new ArrayList<E>();
-		for (Object e : ary) {
-			list.add((E) e);
-		}
-		return list;
-	}
+//	@SuppressWarnings("unchecked")
+//	public static <E> List<E> arrayToList(Object[] ary, Class<E> E) {
+//		List<E> list = new ArrayList<E>();
+//		for (Object e : ary) {
+//			list.add((E) e);
+//		}
+//		return list;
+//	}
+	
+	
+
 
 }

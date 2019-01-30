@@ -31,6 +31,16 @@ public @interface ColumnInfo {
 	 * 时间字段格式化，如果是日期类型，需要格式化，则配置此字段
 	 */
 	String dateFormart() default "";
+	
+	/**
+	 * 是否插入
+	 * @return
+	 */
 	boolean isInsert() default true;
+	
+	/**
+	 * 是否更新
+	 * @return
+	 */
 	boolean isUpdate() default true;
 }

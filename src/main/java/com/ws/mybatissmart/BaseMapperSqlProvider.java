@@ -110,5 +110,12 @@ public class BaseMapperSqlProvider {
 		LOGGER.info(sql);
 		return sql;
 	}
+	public String deleteForWhere(@Param("clazz") Class<?> clazz,
+			@Param(MybatisSmartAutoConfiguration.C_K) WhereSql cond) {
+		ClassMapperInfo cmi = MybatisSmartContext.getClassMapperInfo(clazz);
+		String sql = cmi.getDeleteByWhereSql(clazz, cond);
+		LOGGER.info(sql);
+		return sql;
+	}
 
 }
