@@ -21,6 +21,7 @@ public @interface TableInfo {
 	 * 别名
 	 */
 	String alias() default "";
+	
 	/**
 	 * id生成策略
 	 * @return
@@ -32,6 +33,7 @@ public @interface TableInfo {
 	 * @return
 	 */
 	String idFieldName() default "id";
+	
 	/**
 	 * id生成策略
 	 * 
@@ -39,14 +41,20 @@ public @interface TableInfo {
 	 * @date Oct 29, 2018
 	 */
 	enum IdtacticsEnum {
+		
+		
 		/**
 		 * 数据库自增
 		 */
 		SQL_INCR,
+		
+		
 		/**
 		 * 插件默认生成
 		 */
 		DFT,
+		
+		
 		/**
 		 * 自定义
 		 */
