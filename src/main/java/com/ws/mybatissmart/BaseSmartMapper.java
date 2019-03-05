@@ -23,6 +23,9 @@ public interface BaseSmartMapper {
 	@UpdateProvider(method = "updateById", type = BaseMapperSqlProvider.class)
 	int updateById(@Param(MybatisSmartAutoConfiguration.E_K)Object e);
 
+	@UpdateProvider(method = "updateByWhere", type = BaseMapperSqlProvider.class)
+	int updateByWhere(@Param(MybatisSmartAutoConfiguration.E_K)Object e, @Param(MybatisSmartAutoConfiguration.C_K)WhereSql filterSqlBuild);
+	
 	@DeleteProvider(method = "deleteById", type = BaseMapperSqlProvider.class)
 	int deleteById(Object idV, Class<?> cl);
 

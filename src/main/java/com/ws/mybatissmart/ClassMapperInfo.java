@@ -76,80 +76,108 @@ public class ClassMapperInfo {
 		StringBuilder sql = new StringBuilder(" insert into ").append(tableInfo.value());
 		StringBuilder clSb = new StringBuilder(" (");
 		StringBuilder cvSb = new StringBuilder(" values(");
-		for (Map.Entry<String, FieldMapperInfo> en : fieldsMapperMap.entrySet()) {
-			fi = en.getValue().getField();
-			ci = en.getValue().getColumnInfo();
-			if (ci != null && !ci.isInsert()) {
-				continue;
-			}
-			if (fi.getName().equals(tableInfo.idFieldName()) && tableInfo.idtactics() == IdtacticsEnum.DFT) {
-				v = SequenceGenerate.nexId(tableInfo.value());
-				fi.setAccessible(true);
-				fi.set(obj, v);
-				if (fi.getType() == String.class) {
-					v = "'" + v + "'";
+		
+		Collection<Object> objList=new ArrayList<>();
+		Integer i=null;
+		if(obj instanceof Collection) {
+			i=0;
+			objList=(Collection<Object>)obj;
+		}else {
+			objList.add(obj);
+		}
+		for (Object paramEntity : objList) {
+			for (Map.Entry<String, FieldMapperInfo> en : fieldsMapperMap.entrySet()) {
+				fi = en.getValue().getField();
+				ci = en.getValue().getColumnInfo();
+				if (ci != null && !ci.isInsert()) {
+					continue;
 				}
-				clSb.append(en.getKey()).append(",");
-				cvSb.append(v).append(",");
-				continue;
-			}
-
-			v = ClassMapperInfo.adornSqlVal(obj, en.getValue(), null);
-			if (ci == null || ci.insertValType().length == 0) {
-				/*
-				 * 不插入空字符串和null值、"null"、" "
-				 */
-				if (StrTool.isNotEmpty(v)) {
-					clSb.append(en.getKey()).append(",");
-					cvSb.append(v).append(",");
-				}
-			} else {
-//				List<ObjTypeEnum> otEs = ClassMapperInfo.arrayToList(ci.insertValType(), ObjTypeEnum.class);
-				List<ObjTypeEnum> otEs = Arrays.asList(ci.insertValType());
-
-				if (otEs.contains(ObjTypeEnum.ALL)) {
-					clSb.append(en.getKey()).append(",");
-					cvSb.append(adornIfEmpty(v)).append(",");
-					/*
-					 * 不插入空字符串和null值
-					 */
-				} else if (otEs.contains(ObjTypeEnum.OBJ)) {
-					if (StrTool.checkNotEmpty(v)) {
+				if (fi.getName().equals(tableInfo.idFieldName()) && tableInfo.idtactics() == IdtacticsEnum.DFT) {
+					v = SequenceGenerate.nexId(tableInfo.value());
+					fi.setAccessible(true);
+					fi.set(paramEntity, v);
+					if (fi.getType() == String.class) {
+						v = "'" + v + "'";
+					}
+					if(i==null||i==0) {
 						clSb.append(en.getKey()).append(",");
+					}
+					cvSb.append(v).append(",");
+					continue;
+				}
+	
+				v = ClassMapperInfo.adornSqlVal(paramEntity, en.getValue(), null,i);
+				if (ci == null || ci.insertValType().length == 0) {
+					/*
+					 * 不插入空字符串和null值、"null"、" "
+					 */
+					if (StrTool.isNotEmpty(v)) {
+						if(i==null||i==0) {
+						clSb.append(en.getKey()).append(",");
+						}
 						cvSb.append(v).append(",");
+					}else if(i!=null){//批量新增时
+						//为了值和列匹配
+						if(i>0&&clSb.indexOf(en.getKey()+",")!=-1) {
+							cvSb.append("null").append(",");
+						}
+					}
+				} else {
+	//				List<ObjTypeEnum> otEs = ClassMapperInfo.arrayToList(ci.insertValType(), ObjTypeEnum.class);
+					List<ObjTypeEnum> otEs = Arrays.asList(ci.insertValType());
+	
+					if (otEs.contains(ObjTypeEnum.ALL)) {
+						if(i==null||i==0) {
+						clSb.append(en.getKey()).append(",");
+						}
+						cvSb.append(adornIfEmpty(v)).append(",");
+						/*
+						 * 不插入空字符串和null值
+						 */
+					} else if (otEs.contains(ObjTypeEnum.OBJ)) {
+						if (StrTool.checkNotEmpty(v)) {
+							if(i==null||i==0) {
+							clSb.append(en.getKey()).append(",");
+							}
+							cvSb.append(v).append(",");
+						}
 					}
 				}
+	
 			}
-
+			cvSb=cvSb.deleteCharAt(cvSb.length() - 1).append("),(");
+			if(i!=null) {
+				i++;
+			}
 		}
-
 		if (clSb.length() > 0) {
-			sql = sql.append(clSb.substring(0, clSb.length() - 1).concat(")"));
-			sql = sql.append(cvSb.substring(0, cvSb.length() - 1).concat(")"));
+			sql = sql.append(clSb.deleteCharAt(clSb.length() - 1).append(")"));
+			sql = sql.append(cvSb.delete(cvSb.length() - 2,cvSb.length()));
 			return sql.toString();
 		}
 		return null;
 	}
 
+
 	public String getUpdateByIdSql(Object obj) throws Exception {
+			idField.setAccessible(true);
+		WhereSql filterSqlBuild=new WhereSql().andEq(idColumnName,  idField.get(obj) );
+		
+		return getUpdateByWhereSql(obj, filterSqlBuild);
+	}
+	public String getUpdateByWhereSql(Object obj, WhereSql filterSqlBuild)  throws Exception {
 
 		ColumnInfo ci = null;
-		idField.setAccessible(true);
+		
 		String v = null;
-		try {
-			v = idField.get(obj) + "";
-			if (StrTool.checkEmpty(v)) {
-				throw new MybatisSmartException("条件字段" + tableInfo.idFieldName() + "的值不能为null");
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
 		Field fi = null;
-
+		String where= buildWhere(obj, filterSqlBuild);
+		if(StrTool.isEmpty(where)) {
+			throw new MybatisSmartException("必须设置where条件");
+		}
 		StringBuilder sql = new StringBuilder(" update ").append(tableInfo.value()).append(" set ");
 		StringBuilder setSb = new StringBuilder();
-		String where = null;
-		where = " where " + idColumnName + "=" + v;
+		
 		for (Map.Entry<String, FieldMapperInfo> en : fieldsMapperMap.entrySet()) {
 			fi = en.getValue().getField();
 			if (fi.getName().equals(tableInfo.idFieldName())) {
@@ -160,7 +188,7 @@ public class ClassMapperInfo {
 				continue;
 			}
 			fi.setAccessible(true);
-			v = ClassMapperInfo.adornSqlVal(obj, en.getValue(), null);
+			v = ClassMapperInfo.adornSqlVal(obj, en.getValue(), null,null);
 			if (ci == null || ci.updateValType().length == 0) {
 				if (StrTool.checkNotEmpty(v)) {
 					setSb.append(en.getKey()).append("=").append(v).append(",");
@@ -214,13 +242,13 @@ public class ClassMapperInfo {
 					if (srcVal == null && fim != null) {
 						try {
 							if (!(obj instanceof Class)) {
-								val = ClassMapperInfo.adornSqlVal(obj, fim, cexusCmp);
+								val = ClassMapperInfo.adornSqlVal(obj, fim, cexusCmp,null);
 							}
 						} catch (Exception exc) {
 							exc.printStackTrace();
 						}
 					} else if (srcVal != null) {
-						val = buildCmpVal(srcVal, null, cexusCmp);
+						val = buildCmpVal(srcVal, null, cexusCmp,null);
 					}
 					if (val != null) {
 						where.append(cond.getLogicCmp().code).append(SPACE).append(columnName).append(SPACE).append(val)
@@ -253,6 +281,7 @@ public class ClassMapperInfo {
 		StringBuilder sql = new StringBuilder(" select count(*) from ").append(tableInfo.value()).append(where);
 		return sql.toString();
 	}
+
 
 	public String getDeleteByWhereSql(Object obj, WhereSql filterSqlBuild) {
 		String where = buildWhere(obj, filterSqlBuild);
@@ -305,7 +334,7 @@ public class ClassMapperInfo {
 	 * @throws IllegalArgumentException
 	 * @throws IllegalAccessException
 	 */
-	private static String adornSqlVal(Object srcObj, FieldMapperInfo fmi, NexusCmp cexusCmp)
+	private static String adornSqlVal(Object srcObj, FieldMapperInfo fmi, NexusCmp cexusCmp,Integer index)
 			throws IllegalArgumentException, IllegalAccessException {
 		Object srcVal = reflexVal(srcObj, fmi);
 		String val = null;
@@ -316,14 +345,15 @@ public class ClassMapperInfo {
 			 * 逻辑运算
 			 */
 			if (cexusCmp != null) {
-				val = buildCmpVal(srcVal, fmi, cexusCmp);
+				val = buildCmpVal(srcVal, fmi, cexusCmp,index);
 			} else {
 				if (fiClass == String.class || fiClass == Date.class) {
 					ColumnInfo ci = fmi.getColumnInfo();
 					if (fiClass == Date.class && (ci != null && ci.dateFormart().length() > 0)) {
 						val = "'" + new SimpleDateFormat(ci.dateFormart()).format((Date) srcVal) + "'";
 					} else {
-						val = "#{" + MybatisSmartAutoConfiguration.E_K + ".".concat(fi.getName()).concat("}");
+						String indexStr = index==null?".":"["+index+"].";
+						val = "#{".concat(MybatisSmartAutoConfiguration.E_K).concat(indexStr).concat(fi.getName()).concat("}");
 					}
 				} else {
 					val = srcVal.toString();
@@ -341,7 +371,7 @@ public class ClassMapperInfo {
 	 * @param fieldName
 	 * @return
 	 */
-	private static String boundSqlVal(Object srcVal, String fieldName) {
+	private static String boundSqlVal(Object srcVal, String fieldName,Integer index) {
 		String srcValStr = srcVal.toString();
 		if (fieldName == null) {
 			if (srcVal.getClass() == String.class) {
@@ -349,7 +379,8 @@ public class ClassMapperInfo {
 			}
 			//......其他数据类型，暂时不支持处理，只能用户在外面处理
 		} else {
-			srcValStr = "#{".concat(MybatisSmartAutoConfiguration.E_K).concat(".").concat(fieldName).concat("}");
+			String indexStr=index==null?".":"["+index+"].";
+			srcValStr = "#{".concat(MybatisSmartAutoConfiguration.E_K).concat(indexStr).concat(fieldName).concat("}");
 		}
 		return srcValStr;
 	}
@@ -362,7 +393,7 @@ public class ClassMapperInfo {
 	 * @param cexusCmp
 	 * @return
 	 */
-	private static String buildCmpVal(Object srcVal, FieldMapperInfo fmi, NexusCmp cexusCmp) {
+	private static String buildCmpVal(Object srcVal, FieldMapperInfo fmi, NexusCmp cexusCmp,Integer index) {
 		if (srcVal==null) {
 			return null;
 		}
@@ -375,18 +406,18 @@ public class ClassMapperInfo {
 		String fieldName = fmi==null?null:fmi.getField().getName();
 
 		if (cexusCmp == NexusCmp.like_lr) {
-			sqlVal = boundSqlVal(srcVal, fieldName);
+			sqlVal = boundSqlVal(srcVal, fieldName,index);
 			sqlVal = cexusCmp.code.concat(" concat('%',").concat(sqlVal).concat(",'%')");
 		} else if (cexusCmp == NexusCmp.like_l) {
-			sqlVal = boundSqlVal(srcVal, fieldName);
+			sqlVal = boundSqlVal(srcVal, fieldName,index);
 			sqlVal = cexusCmp.code.concat(" concat('%',").concat(sqlVal).concat(")");
 		} else if (cexusCmp == NexusCmp.like_r) {
-			sqlVal = boundSqlVal(srcVal, fieldName);
+			sqlVal = boundSqlVal(srcVal, fieldName,index);
 			sqlVal = cexusCmp.code.concat(" concat(").concat(sqlVal).concat(",'%')");
 		} else if (sqlVal.equalsIgnoreCase(ValTypeEnum.NULL.code)) {
 			sqlVal = cexusCmp.code.concat(SPACE).concat(sqlVal);
 		} else if (fiClass == String.class || srcVal instanceof Date) {
-			sqlVal = boundSqlVal(srcVal, fieldName);
+			sqlVal = boundSqlVal(srcVal, fieldName,index);
 			sqlVal = cexusCmp.code.concat(SPACE).concat(sqlVal);
 		} else if (cexusCmp == NexusCmp.in || cexusCmp == NexusCmp.not_in) {
 			if(srcVal.getClass().isArray()) {
@@ -411,7 +442,7 @@ public class ClassMapperInfo {
 
 			sqlVal = cexusCmp.code.concat(" (").concat(sqlVal).concat(")");
 		} else {
-			sqlVal = boundSqlVal(srcVal, fieldName);
+			sqlVal = boundSqlVal(srcVal, fieldName,index);
 			sqlVal = cexusCmp.code.concat(sqlVal);
 		}
 		return sqlVal;

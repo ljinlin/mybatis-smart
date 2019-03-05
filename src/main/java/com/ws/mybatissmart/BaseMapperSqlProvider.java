@@ -1,5 +1,7 @@
 package com.ws.mybatissmart;
 
+import java.util.List;
+
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.binding.MapperMethod.ParamMap;
 import org.slf4j.Logger;
@@ -58,10 +60,16 @@ public class BaseMapperSqlProvider {
 
 	public String insert(@Param(MybatisSmartAutoConfiguration.E_K) Object obj) {
 		Object entity = obj;
+		Class<?> clazz=null;
 		if (obj instanceof ParamMap) {
-			entity = ((ParamMap<?>) obj).get(MybatisSmartAutoConfiguration.E_K);
+			 entity = ((ParamMap<?>) obj).get(MybatisSmartAutoConfiguration.E_K);
+			if (entity instanceof List) {
+				clazz= ((List) entity).get(0).getClass();
+			} else {
+				clazz=entity.getClass();
+			}
 		}
-		ClassMapperInfo cmi = MybatisSmartContext.getClassMapperInfo(entity.getClass());
+		ClassMapperInfo cmi = MybatisSmartContext.getClassMapperInfo(clazz);
 		String sql = null;
 		try {
 			sql = cmi.getInsertSql(entity);
@@ -85,6 +93,17 @@ public class BaseMapperSqlProvider {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		return sql;
+	}
+	public String updateByWhere(@Param(MybatisSmartAutoConfiguration.E_K) Object obj,
+			@Param(MybatisSmartAutoConfiguration.C_K) WhereSql cond) {
+		Object entity = obj;
+		if (obj instanceof ParamMap) {
+			entity = ((ParamMap<?>) obj).get(MybatisSmartAutoConfiguration.E_K);
+		}
+		ClassMapperInfo cmi = MybatisSmartContext.getClassMapperInfo(entity.getClass());
+		String sql = cmi.getDeleteByWhereSql(entity, cond);
+		LOGGER.info(sql);
 		return sql;
 	}
 
