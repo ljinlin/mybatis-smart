@@ -1,6 +1,5 @@
 package com.ws.mybatissmart;
 
-import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -16,6 +15,7 @@ import com.ws.commons.constant.NexusCmp;
 import com.ws.commons.constant.ObjTypeEnum;
 import com.ws.commons.constant.ValTypeEnum;
 import com.ws.commons.tool.StrTool;
+import com.ws.mybatissmart.Constant.SQL;
 import com.ws.mybatissmart.annotation.ColumnInfo;
 import com.ws.mybatissmart.annotation.TableInfo;
 import com.ws.mybatissmart.annotation.TableInfo.IdtacticsEnum;
@@ -76,13 +76,13 @@ public class ClassMapperInfo {
 		StringBuilder sql = new StringBuilder(" insert into ").append(tableInfo.value());
 		StringBuilder clSb = new StringBuilder(" (");
 		StringBuilder cvSb = new StringBuilder(" values(");
-		
-		Collection<Object> objList=new ArrayList<>();
-		Integer i=null;
-		if(obj instanceof Collection) {
-			i=0;
-			objList=(Collection<Object>)obj;
-		}else {
+
+		Collection<Object> objList = new ArrayList<>();
+		Integer i = null;
+		if (obj instanceof Collection) {
+			i = 0;
+			objList = (Collection<Object>) obj;
+		} else {
 			objList.add(obj);
 		}
 		for (Object paramEntity : objList) {
@@ -99,36 +99,37 @@ public class ClassMapperInfo {
 					if (fi.getType() == String.class) {
 						v = "'" + v + "'";
 					}
-					if(i==null||i==0) {
+					if (i == null || i == 0) {
 						clSb.append(en.getKey()).append(",");
 					}
 					cvSb.append(v).append(",");
 					continue;
 				}
-	
-				v = ClassMapperInfo.adornSqlVal(paramEntity, en.getValue(), null,i);
+
+				v = ClassMapperInfo.adornSqlVal(paramEntity, en.getValue(), null, i);
 				if (ci == null || ci.insertValType().length == 0) {
 					/*
 					 * 不插入空字符串和null值、"null"、" "
 					 */
 					if (StrTool.isNotEmpty(v)) {
-						if(i==null||i==0) {
-						clSb.append(en.getKey()).append(",");
+						if (i == null || i == 0) {
+							clSb.append(en.getKey()).append(",");
 						}
 						cvSb.append(v).append(",");
-					}else if(i!=null){//批量新增时
-						//为了值和列匹配
-						if(i>0&&clSb.indexOf(en.getKey()+",")!=-1) {
+					} else if (i != null) {// 批量新增时
+						// 为了值和列匹配
+						if (i > 0 && clSb.indexOf(en.getKey() + ",") != -1) {
 							cvSb.append("null").append(",");
 						}
 					}
 				} else {
-	//				List<ObjTypeEnum> otEs = ClassMapperInfo.arrayToList(ci.insertValType(), ObjTypeEnum.class);
+					// List<ObjTypeEnum> otEs = ClassMapperInfo.arrayToList(ci.insertValType(),
+					// ObjTypeEnum.class);
 					List<ObjTypeEnum> otEs = Arrays.asList(ci.insertValType());
-	
+
 					if (otEs.contains(ObjTypeEnum.ALL)) {
-						if(i==null||i==0) {
-						clSb.append(en.getKey()).append(",");
+						if (i == null || i == 0) {
+							clSb.append(en.getKey()).append(",");
 						}
 						cvSb.append(adornIfEmpty(v)).append(",");
 						/*
@@ -136,48 +137,48 @@ public class ClassMapperInfo {
 						 */
 					} else if (otEs.contains(ObjTypeEnum.OBJ)) {
 						if (StrTool.checkNotEmpty(v)) {
-							if(i==null||i==0) {
-							clSb.append(en.getKey()).append(",");
+							if (i == null || i == 0) {
+								clSb.append(en.getKey()).append(",");
 							}
 							cvSb.append(v).append(",");
 						}
 					}
 				}
-	
+
 			}
-			cvSb=cvSb.deleteCharAt(cvSb.length() - 1).append("),(");
-			if(i!=null) {
+			cvSb = cvSb.deleteCharAt(cvSb.length() - 1).append("),(");
+			if (i != null) {
 				i++;
 			}
 		}
 		if (clSb.length() > 0) {
 			sql = sql.append(clSb.deleteCharAt(clSb.length() - 1).append(")"));
-			sql = sql.append(cvSb.delete(cvSb.length() - 2,cvSb.length()));
+			sql = sql.append(cvSb.delete(cvSb.length() - 2, cvSb.length()));
 			return sql.toString();
 		}
 		return null;
 	}
 
-
 	public String getUpdateByIdSql(Object obj) throws Exception {
-			idField.setAccessible(true);
-		WhereSql filterSqlBuild=new WhereSql().andEq(idColumnName,  idField.get(obj) );
-		
+		idField.setAccessible(true);
+		WhereSql filterSqlBuild = new WhereSql().andEq(idColumnName, idField.get(obj));
+
 		return getUpdateByWhereSql(obj, filterSqlBuild);
 	}
-	public String getUpdateByWhereSql(Object obj, WhereSql filterSqlBuild)  throws Exception {
+
+	public String getUpdateByWhereSql(Object obj, WhereSql filterSqlBuild) throws Exception {
 
 		ColumnInfo ci = null;
-		
+
 		String v = null;
 		Field fi = null;
-		String where= buildWhere(obj, filterSqlBuild);
-		if(StrTool.isEmpty(where)) {
+		String where = buildWhere(obj, filterSqlBuild);
+		if (StrTool.isEmpty(where)) {
 			throw new MybatisSmartException("必须设置where条件");
 		}
 		StringBuilder sql = new StringBuilder(" update ").append(tableInfo.value()).append(" set ");
 		StringBuilder setSb = new StringBuilder();
-		
+
 		for (Map.Entry<String, FieldMapperInfo> en : fieldsMapperMap.entrySet()) {
 			fi = en.getValue().getField();
 			if (fi.getName().equals(tableInfo.idFieldName())) {
@@ -188,13 +189,14 @@ public class ClassMapperInfo {
 				continue;
 			}
 			fi.setAccessible(true);
-			v = ClassMapperInfo.adornSqlVal(obj, en.getValue(), null,null);
+			v = ClassMapperInfo.adornSqlVal(obj, en.getValue(), null, null);
 			if (ci == null || ci.updateValType().length == 0) {
 				if (StrTool.checkNotEmpty(v)) {
 					setSb.append(en.getKey()).append("=").append(v).append(",");
 				}
 			} else {
-//				List<ObjTypeEnum> otEs = ClassMapperInfo.arrayToList(ci.updateValType(), ObjTypeEnum.class);
+				// List<ObjTypeEnum> otEs = ClassMapperInfo.arrayToList(ci.updateValType(),
+				// ObjTypeEnum.class);
 				List<ObjTypeEnum> otEs = Arrays.asList(ci.updateValType());
 				if (otEs.contains(ObjTypeEnum.ALL)) {
 					setSb.append(en.getKey()).append("=").append(adornIfEmpty(v)).append(",");
@@ -224,15 +226,12 @@ public class ClassMapperInfo {
 		return sql.toString();
 	}
 
-	private static final String SPACE = " ";
-	private static final String WHERE_PRE = " where 1=1 ";
-
 	private String buildWhere(Object obj, WhereSql filterSqlBuild) {
 		final StringBuilder where = new StringBuilder();
 		if (obj != null && filterSqlBuild != null) {
 			List<WhereCond> conds = filterSqlBuild.getConds();
 			if (!conds.isEmpty()) {
-				where.append(WHERE_PRE);
+				where.append(SQL.WHERE_PRE);
 				conds.forEach(cond -> {
 					String columnName = cond.getColumnName();
 					Object srcVal = cond.getVal();
@@ -242,17 +241,17 @@ public class ClassMapperInfo {
 					if (srcVal == null && fim != null) {
 						try {
 							if (!(obj instanceof Class)) {
-								val = ClassMapperInfo.adornSqlVal(obj, fim, cexusCmp,null);
+								val = ClassMapperInfo.adornSqlVal(obj, fim, cexusCmp, null);
 							}
 						} catch (Exception exc) {
 							exc.printStackTrace();
 						}
 					} else if (srcVal != null) {
-						val = buildCmpVal(srcVal, null, cexusCmp,null);
+						val = buildCmpVal(srcVal, null, cexusCmp, null);
 					}
 					if (val != null) {
-						where.append(cond.getLogicCmp().code).append(SPACE).append(columnName).append(SPACE).append(val)
-								.append(SPACE);
+						where.append(cond.getLogicCmp().code).append(Constant.SPACE).append(columnName)
+								.append(Constant.SPACE).append(val).append(Constant.SPACE);
 					}
 
 				});
@@ -264,9 +263,9 @@ public class ClassMapperInfo {
 	public String getSelectByWhereSql(Object obj, WhereSql filterSqlBuild) {
 		String where = buildWhere(obj, filterSqlBuild);
 
-		String limit = filterSqlBuild == null ? "" : filterSqlBuild.getLimit();
-		String orderBy = filterSqlBuild == null ? "" : filterSqlBuild.getOrderBy();
-		//if()
+		String limit = filterSqlBuild == null ? StrTool.EMPTY : filterSqlBuild.getLimit();
+		String orderBy = filterSqlBuild == null ? StrTool.EMPTY : filterSqlBuild.getOrderBy();
+		// if()
 		StringBuilder sql = new StringBuilder(" select  ").append(limit).append(" ").append(this.getColumns())
 				.append(" from ").append(tableInfo.value());
 		sql.append(where);
@@ -281,7 +280,6 @@ public class ClassMapperInfo {
 		StringBuilder sql = new StringBuilder(" select count(*) from ").append(tableInfo.value()).append(where);
 		return sql.toString();
 	}
-
 
 	public String getDeleteByWhereSql(Object obj, WhereSql filterSqlBuild) {
 		String where = buildWhere(obj, filterSqlBuild);
@@ -327,14 +325,17 @@ public class ClassMapperInfo {
 	/**
 	 * 装饰sql值
 	 * 
-	 * @param srcObj   原始值所属对象
-	 * @param fmi      对应的字段映射信息
-	 * @param cexusCmp 逻辑计算符号，如insert、update..时不需计算则可为null
+	 * @param srcObj
+	 *            原始值所属对象
+	 * @param fmi
+	 *            对应的字段映射信息
+	 * @param cexusCmp
+	 *            逻辑计算符号，如insert、update..时不需计算则可为null
 	 * @return
 	 * @throws IllegalArgumentException
 	 * @throws IllegalAccessException
 	 */
-	private static String adornSqlVal(Object srcObj, FieldMapperInfo fmi, NexusCmp cexusCmp,Integer index)
+	private static String adornSqlVal(Object srcObj, FieldMapperInfo fmi, NexusCmp cexusCmp, Integer index)
 			throws IllegalArgumentException, IllegalAccessException {
 		Object srcVal = reflexVal(srcObj, fmi);
 		String val = null;
@@ -345,15 +346,15 @@ public class ClassMapperInfo {
 			 * 逻辑运算
 			 */
 			if (cexusCmp != null) {
-				val = buildCmpVal(srcVal, fmi, cexusCmp,index);
+				val = buildCmpVal(srcVal, fmi, cexusCmp, index);
 			} else {
 				if (fiClass == String.class || fiClass == Date.class) {
 					ColumnInfo ci = fmi.getColumnInfo();
 					if (fiClass == Date.class && (ci != null && ci.dateFormart().length() > 0)) {
 						val = "'" + new SimpleDateFormat(ci.dateFormart()).format((Date) srcVal) + "'";
 					} else {
-						String indexStr = index==null?".":"["+index+"].";
-						val = "#{".concat(MybatisSmartAutoConfiguration.E_K).concat(indexStr).concat(fi.getName()).concat("}");
+						String indexStr = index == null ? "." : "[" + index + "].";
+						val = "#{".concat(Constant.PARAM_KEY).concat(indexStr).concat(fi.getName()).concat("}");
 					}
 				} else {
 					val = srcVal.toString();
@@ -371,16 +372,16 @@ public class ClassMapperInfo {
 	 * @param fieldName
 	 * @return
 	 */
-	private static String boundSqlVal(Object srcVal, String fieldName,Integer index) {
+	private static String boundSqlVal(Object srcVal, String fieldName, Integer index) {
 		String srcValStr = srcVal.toString();
 		if (fieldName == null) {
 			if (srcVal.getClass() == String.class) {
 				srcValStr = "'".concat(srcValStr).concat("'");
 			}
-			//......其他数据类型，暂时不支持处理，只能用户在外面处理
+			// ......其他数据类型，暂时不支持处理，只能用户在外面处理
 		} else {
-			String indexStr=index==null?".":"["+index+"].";
-			srcValStr = "#{".concat(MybatisSmartAutoConfiguration.E_K).concat(indexStr).concat(fieldName).concat("}");
+			String indexStr = index == null ? "." : "[" + index + "].";
+			srcValStr = "#{".concat(Constant.PARAM_KEY).concat(indexStr).concat(fieldName).concat("}");
 		}
 		return srcValStr;
 	}
@@ -389,12 +390,13 @@ public class ClassMapperInfo {
 	 * 构建计算值
 	 * 
 	 * @param srcVal
-	 * @param fmi 可以为null，无需#{} 解析，则必传此参数
+	 * @param fmi
+	 *            可以为null，无需#{} 解析，则必传此参数
 	 * @param cexusCmp
 	 * @return
 	 */
-	private static String buildCmpVal(Object srcVal, FieldMapperInfo fmi, NexusCmp cexusCmp,Integer index) {
-		if (srcVal==null) {
+	private static String buildCmpVal(Object srcVal, FieldMapperInfo fmi, NexusCmp cexusCmp, Integer index) {
+		if (srcVal == null) {
 			return null;
 		}
 		String sqlVal = srcVal.toString();
@@ -403,25 +405,25 @@ public class ClassMapperInfo {
 			return null;
 		}
 		Class<?> fiClass = srcVal.getClass();
-		String fieldName = fmi==null?null:fmi.getField().getName();
+		String fieldName = fmi == null ? null : fmi.getField().getName();
 
 		if (cexusCmp == NexusCmp.like_lr) {
-			sqlVal = boundSqlVal(srcVal, fieldName,index);
+			sqlVal = boundSqlVal(srcVal, fieldName, index);
 			sqlVal = cexusCmp.code.concat(" concat('%',").concat(sqlVal).concat(",'%')");
 		} else if (cexusCmp == NexusCmp.like_l) {
-			sqlVal = boundSqlVal(srcVal, fieldName,index);
+			sqlVal = boundSqlVal(srcVal, fieldName, index);
 			sqlVal = cexusCmp.code.concat(" concat('%',").concat(sqlVal).concat(")");
 		} else if (cexusCmp == NexusCmp.like_r) {
-			sqlVal = boundSqlVal(srcVal, fieldName,index);
+			sqlVal = boundSqlVal(srcVal, fieldName, index);
 			sqlVal = cexusCmp.code.concat(" concat(").concat(sqlVal).concat(",'%')");
 		} else if (sqlVal.equalsIgnoreCase(ValTypeEnum.NULL.code)) {
-			sqlVal = cexusCmp.code.concat(SPACE).concat(sqlVal);
+			sqlVal = cexusCmp.code.concat(Constant.SPACE).concat(sqlVal);
 		} else if (fiClass == String.class || srcVal instanceof Date) {
-			sqlVal = boundSqlVal(srcVal, fieldName,index);
-			sqlVal = cexusCmp.code.concat(SPACE).concat(sqlVal);
+			sqlVal = boundSqlVal(srcVal, fieldName, index);
+			sqlVal = cexusCmp.code.concat(Constant.SPACE).concat(sqlVal);
 		} else if (cexusCmp == NexusCmp.in || cexusCmp == NexusCmp.not_in) {
-			if(srcVal.getClass().isArray()) {
-				srcVal=Arrays.asList((Object[])srcVal);
+			if (srcVal.getClass().isArray()) {
+				srcVal = Arrays.asList((Object[]) srcVal);
 			}
 			if (srcVal instanceof Collection) {
 				Collection<?> clt = (Collection<?>) srcVal;
@@ -442,7 +444,7 @@ public class ClassMapperInfo {
 
 			sqlVal = cexusCmp.code.concat(" (").concat(sqlVal).concat(")");
 		} else {
-			sqlVal = boundSqlVal(srcVal, fieldName,index);
+			sqlVal = boundSqlVal(srcVal, fieldName, index);
 			sqlVal = cexusCmp.code.concat(sqlVal);
 		}
 		return sqlVal;
@@ -461,16 +463,13 @@ public class ClassMapperInfo {
 		return clsStr;
 	}
 
-//	@SuppressWarnings("unchecked")
-//	public static <E> List<E> arrayToList(Object[] ary, Class<E> E) {
-//		List<E> list = new ArrayList<E>();
-//		for (Object e : ary) {
-//			list.add((E) e);
-//		}
-//		return list;
-//	}
-	
-	
-
+	// @SuppressWarnings("unchecked")
+	// public static <E> List<E> arrayToList(Object[] ary, Class<E> E) {
+	// List<E> list = new ArrayList<E>();
+	// for (Object e : ary) {
+	// list.add((E) e);
+	// }
+	// return list;
+	// }
 
 }

@@ -9,41 +9,39 @@ import org.slf4j.LoggerFactory;
 
 public class BaseMapperSqlProvider {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(MybatisSmartAutoConfiguration.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(BaseMapperSqlProvider.class);
 
-	public String selectByWhere(@Param(MybatisSmartAutoConfiguration.E_K) Object obj,
-			@Param(MybatisSmartAutoConfiguration.C_K) WhereSql cond) {
+	public String selectByWhere(@Param(Constant.PARAM_KEY) Object obj, @Param(Constant.COND_KEY) WhereSql cond) {
 		Object entity = obj;
 		if (obj instanceof ParamMap) {
-			entity = ((ParamMap<?>) obj).get(MybatisSmartAutoConfiguration.E_K);
+			entity = ((ParamMap<?>) obj).get(Constant.PARAM_KEY);
 		}
 		ClassMapperInfo cmi = MybatisSmartContext.getClassMapperInfo(entity.getClass());
 		String sql = cmi.getSelectByWhereSql(entity, cond);
 		LOGGER.info(sql);
 		return sql;
 	}
-	public String selectForWhere(@Param("clazz") Class<?> clazz,
-			@Param(MybatisSmartAutoConfiguration.C_K) WhereSql cond) {
-	
+
+	public String selectForWhere(@Param("clazz") Class<?> clazz, @Param(Constant.COND_KEY) WhereSql cond) {
+
 		ClassMapperInfo cmi = MybatisSmartContext.getClassMapperInfo(clazz);
 		String sql = cmi.getSelectByWhereSql(clazz, cond);
 		LOGGER.info(sql);
 		return sql;
 	}
-	public String countForWhere(@Param("clazz") Class<?> clazz,
-			@Param(MybatisSmartAutoConfiguration.C_K) WhereSql cond) {
-		
+
+	public String countForWhere(@Param("clazz") Class<?> clazz, @Param(Constant.COND_KEY) WhereSql cond) {
+
 		ClassMapperInfo cmi = MybatisSmartContext.getClassMapperInfo(clazz);
 		String sql = cmi.getCountByWhereSql(clazz, cond);
 		LOGGER.info(sql);
 		return sql;
 	}
 
-	public String countByWhere(@Param(MybatisSmartAutoConfiguration.E_K) Object obj,
-			@Param(MybatisSmartAutoConfiguration.C_K) WhereSql cond) {
+	public String countByWhere(@Param(Constant.PARAM_KEY) Object obj, @Param(Constant.COND_KEY) WhereSql cond) {
 		Object entity = obj;
 		if (obj instanceof ParamMap) {
-			entity = ((ParamMap<?>) obj).get(MybatisSmartAutoConfiguration.E_K);
+			entity = ((ParamMap<?>) obj).get(Constant.PARAM_KEY);
 		}
 		ClassMapperInfo cmi = MybatisSmartContext.getClassMapperInfo(entity.getClass());
 		String sql = cmi.getCountByWhereSql(entity, cond);
@@ -58,15 +56,15 @@ public class BaseMapperSqlProvider {
 		return sql;
 	}
 
-	public String insert(@Param(MybatisSmartAutoConfiguration.E_K) Object obj) {
+	public String insert(@Param(Constant.PARAM_KEY) Object obj) {
 		Object entity = obj;
-		Class<?> clazz=null;
+		Class<?> clazz = null;
 		if (obj instanceof ParamMap) {
-			 entity = ((ParamMap<?>) obj).get(MybatisSmartAutoConfiguration.E_K);
+			entity = ((ParamMap<?>) obj).get(Constant.PARAM_KEY);
 			if (entity instanceof List) {
-				clazz= ((List) entity).get(0).getClass();
+				clazz = ((List) entity).get(0).getClass();
 			} else {
-				clazz=entity.getClass();
+				clazz = entity.getClass();
 			}
 		}
 		ClassMapperInfo cmi = MybatisSmartContext.getClassMapperInfo(clazz);
@@ -80,10 +78,10 @@ public class BaseMapperSqlProvider {
 		return sql;
 	}
 
-	public String updateById(@Param(MybatisSmartAutoConfiguration.E_K) Object obj) {
+	public String updateById(@Param(Constant.PARAM_KEY) Object obj) {
 		Object entity = obj;
 		if (obj instanceof ParamMap) {
-			entity = ((ParamMap<?>) obj).get(MybatisSmartAutoConfiguration.E_K);
+			entity = ((ParamMap<?>) obj).get(Constant.PARAM_KEY);
 		}
 		ClassMapperInfo cmi = MybatisSmartContext.getClassMapperInfo(entity.getClass());
 		String sql = null;
@@ -95,11 +93,11 @@ public class BaseMapperSqlProvider {
 		}
 		return sql;
 	}
-	public String updateByWhere(@Param(MybatisSmartAutoConfiguration.E_K) Object obj,
-			@Param(MybatisSmartAutoConfiguration.C_K) WhereSql cond) {
+
+	public String updateByWhere(@Param(Constant.PARAM_KEY) Object obj, @Param(Constant.COND_KEY) WhereSql cond) {
 		Object entity = obj;
 		if (obj instanceof ParamMap) {
-			entity = ((ParamMap<?>) obj).get(MybatisSmartAutoConfiguration.E_K);
+			entity = ((ParamMap<?>) obj).get(Constant.PARAM_KEY);
 		}
 		ClassMapperInfo cmi = MybatisSmartContext.getClassMapperInfo(entity.getClass());
 		String sql = cmi.getDeleteByWhereSql(entity, cond);
@@ -110,7 +108,7 @@ public class BaseMapperSqlProvider {
 	public String deleteById(Object obj, Class<?> cl) {
 		Object entity = obj;
 		if (obj instanceof ParamMap) {
-			entity = ((ParamMap<?>) obj).get(MybatisSmartAutoConfiguration.E_K);
+			entity = ((ParamMap<?>) obj).get(Constant.PARAM_KEY);
 		}
 		ClassMapperInfo cmi = MybatisSmartContext.getClassMapperInfo(cl);
 		String sql = cmi.getDeleteByIdSql(entity);
@@ -118,19 +116,18 @@ public class BaseMapperSqlProvider {
 		return sql;
 	}
 
-	public String deleteByWhere(@Param(MybatisSmartAutoConfiguration.E_K) Object obj,
-			@Param(MybatisSmartAutoConfiguration.C_K) WhereSql cond) {
+	public String deleteByWhere(@Param(Constant.PARAM_KEY) Object obj, @Param(Constant.COND_KEY) WhereSql cond) {
 		Object entity = obj;
 		if (obj instanceof ParamMap) {
-			entity = ((ParamMap<?>) obj).get(MybatisSmartAutoConfiguration.E_K);
+			entity = ((ParamMap<?>) obj).get(Constant.PARAM_KEY);
 		}
 		ClassMapperInfo cmi = MybatisSmartContext.getClassMapperInfo(entity.getClass());
 		String sql = cmi.getDeleteByWhereSql(entity, cond);
 		LOGGER.info(sql);
 		return sql;
 	}
-	public String deleteForWhere(@Param("clazz") Class<?> clazz,
-			@Param(MybatisSmartAutoConfiguration.C_K) WhereSql cond) {
+
+	public String deleteForWhere(@Param("clazz") Class<?> clazz, @Param(Constant.COND_KEY) WhereSql cond) {
 		ClassMapperInfo cmi = MybatisSmartContext.getClassMapperInfo(clazz);
 		String sql = cmi.getDeleteByWhereSql(clazz, cond);
 		LOGGER.info(sql);

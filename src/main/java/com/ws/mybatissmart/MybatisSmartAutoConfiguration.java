@@ -15,9 +15,6 @@ import org.springframework.context.annotation.Configuration;
 @EnableConfigurationProperties(value = { MybatisSmartProperties.class })
 public class MybatisSmartAutoConfiguration {
 
-	static final String E_K = "ek";
-	static final String C_K = "ck";
-
 	@Autowired
 	private SqlSessionFactory sessionFactory;
 	@Autowired
@@ -26,7 +23,7 @@ public class MybatisSmartAutoConfiguration {
 	@PostConstruct
 	public void init() throws IOException {
 		org.apache.ibatis.session.Configuration configuration = sessionFactory.getConfiguration();
-		configuration.addMapper(SmartMapper.class);
+		configuration.addMapper(SelfMapper.class);
 		MybatisSmartContext.initConf(sessionFactory, mybatisSmartProperties);
 		MybatisSmartContext.scanDataModel();
 	}
