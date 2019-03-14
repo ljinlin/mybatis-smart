@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.ws.commons.constant.LogicCmp;
 import com.ws.commons.constant.NexusCmp;
+import com.ws.commons.constant.OrderChar;
 import com.ws.commons.constant.ValTypeEnum;
 
 public class WhereSql {
@@ -13,6 +14,11 @@ public class WhereSql {
 	private String limit = "";
 	private List<WhereCond> conds = new ArrayList<WhereCond>();
 
+	private static class Constant{
+		private static final String  ORDER_BY_SQL = " order by ";
+		
+	}
+	
 	public String getLimit() {
 		return limit;
 	}
@@ -25,11 +31,11 @@ public class WhereSql {
 		return orderBy;
 	}
 
-	public void setOrderBy(String orderBy, boolean isAsc) {
-		if (orderBy != null && orderBy.length() > 0 && !isAsc) {
-			orderBy = orderBy.concat(" desc");
-		}
-		this.orderBy = orderBy;
+	public void setOrderByDesc(String orderByFieldName) {
+		this.orderBy =Constant.ORDER_BY_SQL.concat(orderByFieldName).concat(" "+OrderChar.DESC.code);
+	}
+	public void setOrderByAsc(String orderByFieldName) {
+		this.orderBy = Constant.ORDER_BY_SQL.concat(orderByFieldName).concat(" "+OrderChar.ASC.code);
 	}
 
 	public void setConds(List<WhereCond> conds) {
@@ -102,6 +108,10 @@ public class WhereSql {
 
 	public WhereSql andEq(String columnName, Object val) {
 		conds.add(new WhereCond(LogicCmp.and, columnName, NexusCmp.eq, val));
+		return this;
+	}
+	public WhereSql andNoEq(String columnName, Object val) {
+		conds.add(new WhereCond(LogicCmp.and, columnName, NexusCmp.no_eq, val));
 		return this;
 	}
 

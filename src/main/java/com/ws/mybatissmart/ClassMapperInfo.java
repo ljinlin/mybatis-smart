@@ -271,7 +271,7 @@ public class ClassMapperInfo {
 				.append(" from ").append(tableInfo.value());
 		sql.append(where);
 		if (StrTool.checkNotEmpty(orderBy)) {
-			sql.append("order by ").append(orderBy);
+			sql.append(orderBy);
 		}
 		return sql.toString();
 	}
