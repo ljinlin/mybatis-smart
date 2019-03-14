@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -33,8 +32,9 @@ public class MybatisSmartContext {
 	private static SqlSessionFactory sessionFactory;
 	private static MybatisSmartProperties mybatisSmartProperties;
 
+	public static final Map<Class<?>, ClassMapperInfo> MAPPERS_INFO = new HashMap<Class<?>, ClassMapperInfo>();
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(MybatisSmartAutoConfiguration.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(MybatisSmartContext.class);
 
 	static void initConf(SqlSessionFactory sessionFactory, MybatisSmartProperties mybatisSmartProperties) {
 		MybatisSmartContext.sessionFactory = sessionFactory;
@@ -42,27 +42,25 @@ public class MybatisSmartContext {
 
 	}
 
-
-	public static final Map<Class<?>, ClassMapperInfo> MAPPERS_INFO = new HashMap<Class<?>, ClassMapperInfo>();
-
 	static ClassMapperInfo getClassMapperInfo(Class<?> cl) {
 		ClassMapperInfo res = MAPPERS_INFO.get(cl);
+		Class<?> tmpCl = cl;
 		if (res != null) {
 			return res;
 		} else {
 			cl = cl.getSuperclass();
 			while (cl != null && cl != Object.class && res == null) {
-				if(cl.getAnnotation(TableInfo.class)!=null) {
+				if (cl.getAnnotation(TableInfo.class) != null) {
 					res = MAPPERS_INFO.get(cl.getSuperclass());
-					if(res==null){
+					if (res == null) {
 						return loadClassMapperInfo(cl);
 					}
 					return res;
-				}else {
-					RefTable refTable=cl.getAnnotation(RefTable.class);
-					if(refTable!=null) {
+				} else {
+					RefTable refTable = cl.getAnnotation(RefTable.class);
+					if (refTable != null) {
 						res = MAPPERS_INFO.get(refTable.value());
-						if(res==null){
+						if (res == null) {
 							return loadClassMapperInfo(cl);
 						}
 						return res;
@@ -71,7 +69,7 @@ public class MybatisSmartContext {
 				cl = cl.getSuperclass();
 			}
 			throw new MybatisSmartException(
-					"Class:" + cl.getCanonicalName() + " 没有配置或者没有关联注解:" + TableInfo.class.getSimpleName());
+					"Class:" + tmpCl.getCanonicalName() + " 没有配置或者没有关联注解:" + TableInfo.class.getSimpleName());
 		}
 	}
 
@@ -91,7 +89,7 @@ public class MybatisSmartContext {
 
 	private static List<String> selectColumns(String tableName) {
 		SqlSession session = MybatisSmartContext.sessionFactory.openSession();
-		List<String> columns = session.selectList(SmartMapper.SELECTFIELDS_STATEMENT,
+		List<String> columns = session.selectList(SelfMapper.SELECTFIELDS_STATEMENT,
 				tableName.replace("[", "").replace("]", ""));
 		session.close();
 		return columns;
@@ -186,43 +184,42 @@ public class MybatisSmartContext {
 			}
 		}
 	}
-	
-	
-    /**
-     * 获取url
-     *
-     * @param dataSource
-     * @return
-     */
-    private static String getUrl(DataSource dataSource) {
-        Connection conn = null;
-        try {
-            conn = dataSource.getConnection();
-            return conn.getMetaData().getURL();
-        } catch (SQLException e) {
-            throw new MybatisSmartException(e.getMessage());
-        } finally {
-            if (conn != null) {
-                try {
-//                    if (closeConn) {
-                        conn.close();
-//                    }
-                } catch (SQLException e) {
-                    //ignore
-                }
-            }
-        }
-    }
-    
-    static String getDialect(DataSource dataSource){
-	  String url=getUrl(dataSource);
-	   DialectEnums[] enums=DialectEnums.values();
-	   for (DialectEnums dialectEnum : enums) {
-		if(url.indexOf(dialectEnum.name)!=-1) {
-			return dialectEnum.name;
+
+	/**
+	 * 获取url
+	 *
+	 * @param dataSource
+	 * @return
+	 */
+	private static String getUrl(DataSource dataSource) {
+		Connection conn = null;
+		try {
+			conn = dataSource.getConnection();
+			return conn.getMetaData().getURL();
+		} catch (SQLException e) {
+			throw new MybatisSmartException(e.getMessage());
+		} finally {
+			if (conn != null) {
+				try {
+					// if (closeConn) {
+					conn.close();
+					// }
+				} catch (SQLException e) {
+					// ignore
+				}
+			}
 		}
 	}
-	   throw new MybatisSmartException("请设置数据库方言");
-    }
+
+	static String getDialect(DataSource dataSource) {
+		String url = getUrl(dataSource);
+		DialectEnums[] enums = DialectEnums.values();
+		for (DialectEnums dialectEnum : enums) {
+			if (url.indexOf(dialectEnum.name) != -1) {
+				return dialectEnum.name;
+			}
+		}
+		throw new MybatisSmartException("请设置数据库方言");
+	}
 
 }

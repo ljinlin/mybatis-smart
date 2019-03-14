@@ -7,18 +7,15 @@ import com.ws.commons.constant.LogicCmp;
 import com.ws.commons.constant.NexusCmp;
 import com.ws.commons.constant.OrderChar;
 import com.ws.commons.constant.ValTypeEnum;
+import com.ws.commons.tool.StrTool;
+import com.ws.mybatissmart.Constant.SQL;
 
 public class WhereSql {
 
-	private String orderBy = "";
-	private String limit = "";
+	private String orderBy = StrTool.EMPTY;
+	private String limit = StrTool.EMPTY;
 	private List<WhereCond> conds = new ArrayList<WhereCond>();
 
-	private static class Constant{
-		private static final String  ORDER_BY_SQL = " order by ";
-		
-	}
-	
 	public String getLimit() {
 		return limit;
 	}
@@ -32,10 +29,11 @@ public class WhereSql {
 	}
 
 	public void setOrderByDesc(String orderByFieldName) {
-		this.orderBy =Constant.ORDER_BY_SQL.concat(orderByFieldName).concat(" "+OrderChar.DESC.code);
+		this.orderBy = SQL.ORDER_BY_SQL.concat(orderByFieldName).concat(Constant.SPACE + OrderChar.DESC.code);
 	}
+
 	public void setOrderByAsc(String orderByFieldName) {
-		this.orderBy = Constant.ORDER_BY_SQL.concat(orderByFieldName).concat(" "+OrderChar.ASC.code);
+		this.orderBy = SQL.ORDER_BY_SQL.concat(orderByFieldName).concat(Constant.SPACE + OrderChar.ASC.code);
 	}
 
 	public void setConds(List<WhereCond> conds) {
@@ -110,6 +108,7 @@ public class WhereSql {
 		conds.add(new WhereCond(LogicCmp.and, columnName, NexusCmp.eq, val));
 		return this;
 	}
+
 	public WhereSql andNoEq(String columnName, Object val) {
 		conds.add(new WhereCond(LogicCmp.and, columnName, NexusCmp.no_eq, val));
 		return this;
@@ -169,15 +168,16 @@ public class WhereSql {
 		conds.add(new WhereCond(LogicCmp.and, columnName, NexusCmp.is_not, ValTypeEnum.NULL.code));
 		return this;
 	}
+
 	public WhereSql andIn(String columnName, Object val) {
 		conds.add(new WhereCond(LogicCmp.and, columnName, NexusCmp.in, val));
 		return this;
 	}
+
 	public WhereSql andNotIn(String columnName, Object val) {
 		conds.add(new WhereCond(LogicCmp.and, columnName, NexusCmp.not_in, val));
 		return this;
 	}
-
 
 	/*
 	 * ================================================================或
@@ -298,10 +298,12 @@ public class WhereSql {
 		conds.add(new WhereCond(LogicCmp.or, columnName, NexusCmp.is_not, ValTypeEnum.NULL.code));
 		return this;
 	}
+
 	public WhereSql orIn(String columnName, Object val) {
 		conds.add(new WhereCond(LogicCmp.or, columnName, NexusCmp.in, val));
 		return this;
 	}
+
 	public WhereSql orNotIn(String columnName, Object val) {
 		conds.add(new WhereCond(LogicCmp.or, columnName, NexusCmp.not_in, val));
 		return this;
