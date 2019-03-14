@@ -59,6 +59,7 @@ public class BaseMapperSqlProvider {
 	public String insert(@Param(Constant.PARAM_KEY) Object obj) {
 		Object entity = obj;
 		Class<?> clazz = null;
+		long sttime=System.currentTimeMillis();
 		if (obj instanceof ParamMap) {
 			entity = ((ParamMap<?>) obj).get(Constant.PARAM_KEY);
 			if (entity instanceof List) {
@@ -71,7 +72,8 @@ public class BaseMapperSqlProvider {
 		String sql = null;
 		try {
 			sql = cmi.getInsertSql(entity);
-			LOGGER.info(sql);
+			long edtime=System.currentTimeMillis();
+			LOGGER.info("构建SQL耗时:"+(edtime-sttime)+" "+sql);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -100,8 +102,13 @@ public class BaseMapperSqlProvider {
 			entity = ((ParamMap<?>) obj).get(Constant.PARAM_KEY);
 		}
 		ClassMapperInfo cmi = MybatisSmartContext.getClassMapperInfo(entity.getClass());
-		String sql = cmi.getDeleteByWhereSql(entity, cond);
-		LOGGER.info(sql);
+		String sql=null;
+		try {
+			sql = cmi.getUpdateByWhereSql(entity, cond);
+			LOGGER.info(sql);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		return sql;
 	}
 

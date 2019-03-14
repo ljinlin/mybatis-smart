@@ -6,7 +6,14 @@ public interface Constant {
 	public static final String SPACE = " ";
 
 	public static interface SQL {
-		static final String WHERE_PRE = " where 1=1 ";
+		static final String WHERE_PRE = " where ";
 		static final String ORDER_BY_SQL = " order by ";
+		static final String LIMIT = " limit ";
+		static final String OFFSET = " offset ";
+		static final String FROM = " from ";
+		static final String INSERT_INTO = " insert into ";
+		static final String SELECT = " select ";
+		static final String DELETE = " delete ";
+		static final String AS = " as ";
 	}
 }

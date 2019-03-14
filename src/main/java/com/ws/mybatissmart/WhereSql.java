@@ -13,14 +13,19 @@ import com.ws.mybatissmart.Constant.SQL;
 public class WhereSql {
 
 	private String orderBy = StrTool.EMPTY;
-	private String limit = StrTool.EMPTY;
+	private Integer offset;
+	private Integer limit;
 	private List<WhereCond> conds = new ArrayList<WhereCond>();
 
-	public String getLimit() {
+	public Integer getLimit() {
 		return limit;
 	}
+	public Integer getOffset() {
+		return offset;
+	}
 
-	public void setLimit(String limit) {
+	public void setLimit(int offset,int limit) {
+		this.offset = offset;
 		this.limit = limit;
 	}
 
@@ -49,6 +54,10 @@ public class WhereSql {
 	 * ================================================================条
 	 * ================================================================件
 	 */
+	public WhereSql addCond(WhereCond whereCond) {
+		this.conds.add(whereCond);
+		return this;
+	}
 	public WhereSql and(String columnName, NexusCmp nexusCmp) {
 		conds.add(new WhereCond(LogicCmp.and, columnName, nexusCmp));
 		return this;

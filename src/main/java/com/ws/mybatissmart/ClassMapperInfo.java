@@ -27,7 +27,8 @@ public class ClassMapperInfo {
 	private String idColumnName;
 	private Class<?> clazz;
 	private LinkedHashMap<String, FieldMapperInfo> fieldsMapperMap;// key:columnName
-
+	private DialectEnums dialect;
+	
 	public Field getIdField() {
 		return idField;
 	}
@@ -68,12 +69,20 @@ public class ClassMapperInfo {
 		this.idColumnName = idColumnName;
 	}
 
+	public DialectEnums getDialect() {
+		return dialect;
+	}
+
+	public void setDialect(DialectEnums dialect) {
+		this.dialect = dialect;
+	}
+
 	public String getInsertSql(Object obj) throws Exception {
 		ColumnInfo ci = null;
 		String v = null;
 		Field fi = null;
 
-		StringBuilder sql = new StringBuilder(" insert into ").append(tableInfo.value());
+		StringBuilder sql = new StringBuilder(SQL.INSERT_INTO).append(tableInfo.value());
 		StringBuilder clSb = new StringBuilder(" (");
 		StringBuilder cvSb = new StringBuilder(" values(");
 
@@ -89,9 +98,13 @@ public class ClassMapperInfo {
 			for (Map.Entry<String, FieldMapperInfo> en : fieldsMapperMap.entrySet()) {
 				fi = en.getValue().getField();
 				ci = en.getValue().getColumnInfo();
-				if (ci != null && !ci.isInsert()) {
+				if (ci != null && ci.isInsert()==false) {
 					continue;
 				}
+				
+				/*
+				 *  id处理
+				 */
 				if (fi.getName().equals(tableInfo.idFieldName()) && tableInfo.idtactics() == IdtacticsEnum.DFT) {
 					v = SequenceGenerate.nexId(tableInfo.value());
 					fi.setAccessible(true);
@@ -105,6 +118,9 @@ public class ClassMapperInfo {
 					cvSb.append(v).append(",");
 					continue;
 				}
+				/*
+				 * 没配置insertValType 或者insertValType为''
+				 */
 
 				v = ClassMapperInfo.adornSqlVal(paramEntity, en.getValue(), null, i);
 				if (ci == null || ci.insertValType().length == 0) {
@@ -116,11 +132,11 @@ public class ClassMapperInfo {
 							clSb.append(en.getKey()).append(",");
 						}
 						cvSb.append(v).append(",");
-					} else if (i != null) {// 批量新增时
-						// 为了值和列匹配
-						if (i > 0 && clSb.indexOf(en.getKey() + ",") != -1) {
-							cvSb.append("null").append(",");
+					}else if(i!=null){//批量新增时
+						if(i==0) {
+							clSb.append(en.getKey()).append(",");
 						}
+						cvSb.append("null").append(",");
 					}
 				} else {
 					// List<ObjTypeEnum> otEs = ClassMapperInfo.arrayToList(ci.insertValType(),
@@ -141,6 +157,11 @@ public class ClassMapperInfo {
 								clSb.append(en.getKey()).append(",");
 							}
 							cvSb.append(v).append(",");
+						}else if(i!=null) {//批量新增时
+							if(i==0) {
+								clSb.append(en.getKey()).append(",");
+							}
+							cvSb.append("null").append(",");
 						}
 					}
 				}
@@ -220,8 +241,8 @@ public class ClassMapperInfo {
 		if (StrTool.checkEmpty(idV)) {
 			throw new MybatisSmartException("条件字段" + tableInfo.idFieldName() + "的值不能为null");
 		}
-		StringBuilder sql = new StringBuilder(" select  ").append(this.getColumns()).append(" from ")
-				.append(tableInfo.value()).append(" where ").append(idColumnName).append("='" + idV + "'");
+		StringBuilder sql = new StringBuilder(SQL.SELECT).append(this.getColumns()).append(SQL.FROM)
+				.append(tableInfo.value()).append(SQL.WHERE_PRE).append(idColumnName).append("='" + idV + "'");
 
 		return sql.toString();
 	}
@@ -231,8 +252,8 @@ public class ClassMapperInfo {
 		if (obj != null && filterSqlBuild != null) {
 			List<WhereCond> conds = filterSqlBuild.getConds();
 			if (!conds.isEmpty()) {
-				where.append(SQL.WHERE_PRE);
-				conds.forEach(cond -> {
+				int index=0;
+				for (WhereCond cond : conds) {
 					String columnName = cond.getColumnName();
 					Object srcVal = cond.getVal();
 					NexusCmp cexusCmp = cond.getNexusCmp();
@@ -247,14 +268,24 @@ public class ClassMapperInfo {
 							exc.printStackTrace();
 						}
 					} else if (srcVal != null) {
-						val = buildCmpVal(srcVal, null, cexusCmp, null);
+						if(cond.isSqlVal()) {
+							val = cexusCmp.code.concat(Constant.SPACE).concat(srcVal.toString());
+						}else {
+							val = buildCmpVal(srcVal, null, cexusCmp,null);  
+						}
 					}
 					if (val != null) {
-						where.append(cond.getLogicCmp().code).append(Constant.SPACE).append(columnName)
-								.append(Constant.SPACE).append(val).append(Constant.SPACE);
+						if(index>0) {
+							where.append(cond.getLogicCmp().code);
+						}
+							where.append(Constant.SPACE).append(columnName).append(Constant.SPACE).append(val)
+							.append(Constant.SPACE);
+							index++;
 					}
-
-				});
+				}
+				if(where.length()>0) {
+					where.insert(0, SQL.WHERE_PRE);
+				}
 			}
 		}
 		return where.toString();
@@ -263,15 +294,29 @@ public class ClassMapperInfo {
 	public String getSelectByWhereSql(Object obj, WhereSql filterSqlBuild) {
 		String where = buildWhere(obj, filterSqlBuild);
 
-		String limit = filterSqlBuild == null ? StrTool.EMPTY : filterSqlBuild.getLimit();
 		String orderBy = filterSqlBuild == null ? StrTool.EMPTY : filterSqlBuild.getOrderBy();
 		// if()
-		StringBuilder sql = new StringBuilder(" select  ").append(limit).append(" ").append(this.getColumns())
-				.append(" from ").append(tableInfo.value());
+		StringBuilder sql = new StringBuilder(SQL.SELECT).append(this.getColumns())
+				.append(SQL.FROM).append(tableInfo.value());
 		sql.append(where);
 		if (StrTool.checkNotEmpty(orderBy)) {
 			sql.append(orderBy);
 		}
+		Integer limit = filterSqlBuild == null ?null:filterSqlBuild.getLimit();
+		if(limit!=null) {
+			switch (dialect) {
+			case MYSQL:
+				sql.append(SQL.LIMIT).append(limit).append(SQL.OFFSET).append(filterSqlBuild.getOffset());
+				break;
+			case SQLSERVER:
+				sql.append(SQL.OFFSET).append(filterSqlBuild.getOffset()).append(" rows fetch next ").append(limit).append(" rows only ");
+				break;
+			default:
+				break;
+			}
+		}
+		
+		
 		return sql.toString();
 	}
 
@@ -284,7 +329,7 @@ public class ClassMapperInfo {
 	public String getDeleteByWhereSql(Object obj, WhereSql filterSqlBuild) {
 		String where = buildWhere(obj, filterSqlBuild);
 		if (StrTool.checkNotEmpty(where)) {
-			StringBuilder sql = new StringBuilder(" delete  from ").append(tableInfo.value()).append(where);
+			StringBuilder sql = new StringBuilder(SQL.DELETE).append(SQL.FROM).append(tableInfo.value()).append(where);
 			return sql.toString();
 		}
 		return null;
@@ -294,7 +339,7 @@ public class ClassMapperInfo {
 		if (StrTool.checkEmpty(idV)) {
 			throw new MybatisSmartException("条件字段" + tableInfo.idFieldName() + "的值不能为null");
 		}
-		StringBuilder sql = new StringBuilder(" delete from ").append(tableInfo.value()).append(" where ")
+		StringBuilder sql = new StringBuilder(SQL.DELETE).append(SQL.FROM).append(tableInfo.value()).append(SQL.WHERE_PRE)
 				.append(idColumnName).append("='" + idV + "'");
 		return sql.toString();
 	}
@@ -418,9 +463,6 @@ public class ClassMapperInfo {
 			sqlVal = cexusCmp.code.concat(" concat(").concat(sqlVal).concat(",'%')");
 		} else if (sqlVal.equalsIgnoreCase(ValTypeEnum.NULL.code)) {
 			sqlVal = cexusCmp.code.concat(Constant.SPACE).concat(sqlVal);
-		} else if (fiClass == String.class || srcVal instanceof Date) {
-			sqlVal = boundSqlVal(srcVal, fieldName, index);
-			sqlVal = cexusCmp.code.concat(Constant.SPACE).concat(sqlVal);
 		} else if (cexusCmp == NexusCmp.in || cexusCmp == NexusCmp.not_in) {
 			if (srcVal.getClass().isArray()) {
 				srcVal = Arrays.asList((Object[]) srcVal);
@@ -443,6 +485,9 @@ public class ClassMapperInfo {
 			}
 
 			sqlVal = cexusCmp.code.concat(" (").concat(sqlVal).concat(")");
+		} else if (fiClass == String.class || srcVal instanceof Date) {
+			sqlVal = boundSqlVal(srcVal, fieldName,index);
+			sqlVal = cexusCmp.code.concat(Constant.SPACE).concat(sqlVal);
 		} else {
 			sqlVal = boundSqlVal(srcVal, fieldName, index);
 			sqlVal = cexusCmp.code.concat(sqlVal);
@@ -454,7 +499,7 @@ public class ClassMapperInfo {
 		StringBuilder cls = new StringBuilder();
 		String clsStr = null;
 		this.fieldsMapperMap.forEach((k, v) -> {
-			cls.append(k).append(" as ").append(v.getField().getName()).append(",");
+			cls.append(k).append(SQL.AS).append(v.getField().getName()).append(",");
 			// cls.append(k).append(",");
 		});
 		if (cls.length() > 0) {

@@ -11,11 +11,19 @@ public class WhereCond {
 	private String columnName;
 	private String valName;
 	private Object val;
+	private boolean isSqlVal=false;
 	public WhereCond(LogicCmp logicCmp,String columnName,NexusCmp nexusCmp, Object val) {
 		this.logicCmp = logicCmp;
 		this.nexusCmp = nexusCmp;
 		this.columnName = columnName;
 		this.val = val;
+	}
+	public WhereCond(LogicCmp logicCmp,String columnName,NexusCmp nexusCmp, Object val,boolean isSqlVal) {
+		this.logicCmp = logicCmp;
+		this.nexusCmp = nexusCmp;
+		this.columnName = columnName;
+		this.val = val;
+		this.isSqlVal = isSqlVal;
 	}
 	public WhereCond(LogicCmp logicCmp,String columnName,NexusCmp nexusCmp) {
 		this.logicCmp = logicCmp;
@@ -51,6 +59,13 @@ public class WhereCond {
 	}
 	public void setLogicCmp(LogicCmp logicCmp) {
 		this.logicCmp = logicCmp;
-	}	
+	}
+	public boolean isSqlVal() {
+		return isSqlVal;
+	}
+	public void setSqlVal(boolean isSqlVal) {
+		this.isSqlVal = isSqlVal;
+	}
+
 	
 }

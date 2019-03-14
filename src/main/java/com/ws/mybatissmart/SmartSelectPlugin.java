@@ -1,4 +1,4 @@
-package com.ws.mybatissmart;
+/*package com.ws.mybatissmart;
 
 import java.util.Properties;
 import java.util.concurrent.Executor;
@@ -28,3 +28,4 @@ public class SmartSelectPlugin implements Interceptor{
 	}
 
 }
+*/

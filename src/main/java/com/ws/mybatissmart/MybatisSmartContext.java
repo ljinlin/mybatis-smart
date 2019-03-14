@@ -6,11 +6,11 @@ import static org.springframework.util.StringUtils.tokenizeToStringArray;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.sql.DataSource;
 
@@ -19,6 +19,7 @@ import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.web.servlet.server.Session;
 import org.springframework.context.ConfigurableApplicationContext;
 
 import com.ws.commons.tool.ClassTool;
@@ -39,7 +40,6 @@ public class MybatisSmartContext {
 	static void initConf(SqlSessionFactory sessionFactory, MybatisSmartProperties mybatisSmartProperties) {
 		MybatisSmartContext.sessionFactory = sessionFactory;
 		MybatisSmartContext.mybatisSmartProperties = mybatisSmartProperties;
-
 	}
 
 	static ClassMapperInfo getClassMapperInfo(Class<?> cl) {
@@ -61,7 +61,7 @@ public class MybatisSmartContext {
 					if (refTable != null) {
 						res = MAPPERS_INFO.get(refTable.value());
 						if (res == null) {
-							return loadClassMapperInfo(cl);
+							return loadClassMapperInfo(refTable.value());
 						}
 						return res;
 					}
@@ -88,12 +88,15 @@ public class MybatisSmartContext {
 	}
 
 	private static List<String> selectColumns(String tableName) {
-		SqlSession session = MybatisSmartContext.sessionFactory.openSession();
-		List<String> columns = session.selectList(SelfMapper.SELECTFIELDS_STATEMENT,
-				tableName.replace("[", "").replace("]", ""));
-		session.close();
+		List<String> columns=null;
+		try(SqlSession session=MybatisSmartContext.sessionFactory.openSession()) {
+			 columns = session.selectList(SelfMapper.SELECTFIELDS_STATEMENT,
+					tableName.replace("[", "").replace("]", ""));
+		} 
 		return columns;
 	}
+
+	private static final Object LOAD_LOCAL = new Object();
 
 	/**
 	 * 加载类的相关映射信息
@@ -101,58 +104,101 @@ public class MybatisSmartContext {
 	 * @param cl
 	 * @return
 	 */
-	private synchronized static ClassMapperInfo loadClassMapperInfo(Class<?> cl) {
+	private static ClassMapperInfo loadClassMapperInfo(Class<?> cl) {
 		ClassMapperInfo clmif = MAPPERS_INFO.get(cl);
 		if (clmif != null) {
 			return clmif;
 		}
-		TableInfo tableInfo = cl.getAnnotation(TableInfo.class);
-		if (tableInfo == null) {
-			return null;
-		}
-		String idFieldName = tableInfo.idFieldName();
-		if (tableInfo.value().length() == 0) {
-			throw new MybatisSmartException(TableInfo.class.getCanonicalName() + " 的value 不能为空");
-		}
-		if (idFieldName.length() == 0) {
-			throw new MybatisSmartException(TableInfo.class.getCanonicalName() + " 的idFieldName value 不能为空");
-		}
-		Map<String, String> columnsCamel = getColumnAndFieldName(tableInfo.value());
-		List<Field> flist = ClassTool.getDecararedFields(cl, false);
-		LinkedHashMap<String, FieldMapperInfo> fieldsMapperMap = new LinkedHashMap<String, FieldMapperInfo>();
+		synchronized (LOAD_LOCAL) {
+			clmif = MAPPERS_INFO.get(cl);
+			if (clmif != null) {
+				return clmif;
+			}
 
-		ClassMapperInfo res = new ClassMapperInfo();
-		flist.forEach(field -> {
-			ColumnInfo columnInfo = field.getAnnotation(ColumnInfo.class);
-			String columnName = "";
-			if (columnInfo != null) {
-				columnName = columnInfo.value().toLowerCase();
+			TableInfo tableInfo = cl.getAnnotation(TableInfo.class);
+			if (tableInfo == null) {
+				return null;
 			}
-			if (columnName.length() > 0) {
-				if (!columnsCamel.containsValue(columnName)) {
-					throw new MybatisSmartException("table:" + tableInfo.value() + " 没有该column:" + columnName);
+			String idFieldName = tableInfo.idFieldName();
+			if (tableInfo.value().length() == 0) {
+				throw new MybatisSmartException(TableInfo.class.getCanonicalName() + " 的value 不能为空");
+			}
+			if (idFieldName.length() == 0) {
+				throw new MybatisSmartException(TableInfo.class.getCanonicalName() + " 的idFieldName value 不能为空");
+			}
+			Map<String, String> columnsCamel=getColumnAndFieldName(tableInfo.value());  
+			
+			
+			List<Field> flist = ClassTool.getDecararedFields(cl, false);
+			LinkedHashMap<String, FieldMapperInfo> fieldsMapperMap = new LinkedHashMap<String, FieldMapperInfo>();
+
+			ClassMapperInfo res = new ClassMapperInfo();
+			res.setDialect(getDialect());
+			flist.forEach(field -> {
+				ColumnInfo columnInfo = field.getAnnotation(ColumnInfo.class);
+				String columnName = "";
+				if (columnInfo != null) {
+					columnName = columnInfo.value().toLowerCase();
 				}
-				fieldsMapperMap.put(columnName, new FieldMapperInfo(field, columnInfo));
-			} else {
-				columnName = columnsCamel.get(field.getName());
-				if (columnName != null) {
-					fieldsMapperMap.put(columnName, new FieldMapperInfo(field, columnInfo));
+
+				if (columnName.length() > 0) {
+					if (!columnsCamel.containsValue(columnName)) {
+						throw new MybatisSmartException("table:" + tableInfo.value() + " 没有该column:" + columnName);
+					}
+					FieldMapperInfo fieldMapperInfo = fieldsMapperMap.get(columnName);
+					if (fieldMapperInfo == null) {
+						fieldsMapperMap.put(columnName, new FieldMapperInfo(field, columnInfo));
+					} else if (fieldMapperInfo.getField().getDeclaringClass()
+							.isAssignableFrom(field.getDeclaringClass())) {// 子类字段覆盖父类字段
+						fieldMapperInfo.setField(field);
+					}  
+				} else {
+					columnName = columnsCamel.get(field.getName());
+					if (columnName != null) {
+						FieldMapperInfo fieldMapperInfo = fieldsMapperMap.get(columnName);
+						if (fieldMapperInfo == null) {
+							fieldsMapperMap.put(columnName, new FieldMapperInfo(field, columnInfo));
+						} else if (fieldMapperInfo.getField().getDeclaringClass()
+								.isAssignableFrom(field.getDeclaringClass())) {// 子类字段覆盖父类字段
+							fieldMapperInfo.setField(field);
+						}
+					}
 				}
-			}
-			if (field.getName().equals(idFieldName)) {
-				res.setIdField(field);
-				res.setIdColumnName(columnName);
-			}
-		});
-		res.setClazz(cl);
-		res.setFieldsMapperMap(fieldsMapperMap);
-		res.setTableInfo(tableInfo);
-		MAPPERS_INFO.put(cl, res);
-		return res;
+				if (field.getName().equals(idFieldName)) {
+					res.setIdField(field);
+					res.setIdColumnName(columnName);
+				}
+			});
+			res.setClazz(cl);
+			res.setFieldsMapperMap(fieldsMapperMap);
+			res.setTableInfo(tableInfo);
+			MAPPERS_INFO.put(cl, res);
+			return res;
+		}
 	}
 
 	private static final int CLASSFILE_SUFX_LEN = ".class".length();
 
+	private static DialectEnums getDialect() {
+		if(MAPPERS_INFO.size()>0) {
+			return MAPPERS_INFO.entrySet().iterator().next().getValue().getDialect();
+		}
+		SqlSession session=null;
+		Connection conn=null;
+		try {
+			session = MybatisSmartContext.sessionFactory.openSession();
+			conn=session.getConnection();
+			return Tool.getDialect(conn);
+		} finally {
+			if(conn!=null) {
+				session.close();
+			}
+			if(session!=null) {
+				session.close();
+			}
+		}
+	}
+	
 	/**
 	 * 扫描数据模型
 	 * 
@@ -185,41 +231,22 @@ public class MybatisSmartContext {
 		}
 	}
 
-	/**
-	 * 获取url
-	 *
-	 * @param dataSource
-	 * @return
-	 */
-	private static String getUrl(DataSource dataSource) {
-		Connection conn = null;
-		try {
-			conn = dataSource.getConnection();
-			return conn.getMetaData().getURL();
-		} catch (SQLException e) {
-			throw new MybatisSmartException(e.getMessage());
-		} finally {
-			if (conn != null) {
-				try {
-					// if (closeConn) {
-					conn.close();
-					// }
-				} catch (SQLException e) {
-					// ignore
-				}
-			}
+
+
+	public static Set<String> getColumns(Class<?> cl) {
+		ClassMapperInfo res = getClassMapperInfo(cl);
+		if (res != null) {
+			return res.getFieldsMapperMap().keySet();
 		}
+		return null;
 	}
 
-	static String getDialect(DataSource dataSource) {
-		String url = getUrl(dataSource);
-		DialectEnums[] enums = DialectEnums.values();
-		for (DialectEnums dialectEnum : enums) {
-			if (url.indexOf(dialectEnum.name) != -1) {
-				return dialectEnum.name;
-			}
+	public static String getTable(Class<?> cl) {
+		ClassMapperInfo res = getClassMapperInfo(cl);
+		if (res != null) {
+			return res.getTableInfo().value();
 		}
-		throw new MybatisSmartException("请设置数据库方言");
+		return null;
 	}
 
 }
