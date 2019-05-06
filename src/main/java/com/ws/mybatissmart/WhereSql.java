@@ -17,6 +17,8 @@ public class WhereSql {
 	private Integer limit;
 	private List<WhereCond> conds = new ArrayList<WhereCond>();
 
+	private String nativeSqlConds;
+	
 	public Integer getLimit() {
 		return limit;
 	}
@@ -47,6 +49,15 @@ public class WhereSql {
 
 	public List<WhereCond> getConds() {
 		return conds;
+	}
+	
+	public WhereSql andChildConds(List<WhereCond> conds) {
+		conds.add(new WhereCond(LogicCmp.and, conds));
+		return this;
+	}
+	public WhereSql orChildConds(List<WhereCond> conds) {
+		conds.add(new WhereCond(LogicCmp.or, conds));
+		return this;
 	}
 
 	/*
@@ -317,5 +328,12 @@ public class WhereSql {
 		conds.add(new WhereCond(LogicCmp.or, columnName, NexusCmp.not_in, val));
 		return this;
 	}
+	public String getNativeSqlConds() {
+		return nativeSqlConds;
+	}
+	public void setNativeSqlConds(String nativeSqlConds) {
+		this.nativeSqlConds = nativeSqlConds;
+	}
+	
 
 }

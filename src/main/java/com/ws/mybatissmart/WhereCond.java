@@ -1,5 +1,7 @@
 package com.ws.mybatissmart;
 
+import java.util.List;
+
 import com.ws.commons.constant.LogicCmp;
 import com.ws.commons.constant.NexusCmp;
 
@@ -12,6 +14,9 @@ public class WhereCond {
 	private String valName;
 	private Object val;
 	private boolean isSqlVal=false;
+	
+	private List<WhereCond> childCond;
+	
 	public WhereCond(LogicCmp logicCmp,String columnName,NexusCmp nexusCmp, Object val) {
 		this.logicCmp = logicCmp;
 		this.nexusCmp = nexusCmp;
@@ -29,6 +34,10 @@ public class WhereCond {
 		this.logicCmp = logicCmp;
 		this.nexusCmp = nexusCmp;
 		this.columnName = columnName;
+	}
+	public WhereCond(LogicCmp logicCmp,List<WhereCond> childCond) {
+		this.logicCmp = logicCmp;
+		this.childCond = childCond;
 	}
 	public NexusCmp getNexusCmp() {
 		return nexusCmp;
@@ -65,6 +74,12 @@ public class WhereCond {
 	}
 	public void setSqlVal(boolean isSqlVal) {
 		this.isSqlVal = isSqlVal;
+	}
+	public List<WhereCond> getChildCond() {
+		return childCond;
+	}
+	public void setChildCond(List<WhereCond> childCond) {
+		this.childCond = childCond;
 	}
 
 	

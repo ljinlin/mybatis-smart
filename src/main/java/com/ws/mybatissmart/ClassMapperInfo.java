@@ -247,46 +247,68 @@ public class ClassMapperInfo {
 		return sql.toString();
 	}
 
-	private String buildWhere(Object obj, WhereSql filterSqlBuild) {
+	private String buildWhere(Object obj, List<WhereCond> conds) {
 		final StringBuilder where = new StringBuilder();
-		if (obj != null && filterSqlBuild != null) {
-			List<WhereCond> conds = filterSqlBuild.getConds();
-			if (!conds.isEmpty()) {
-				int index=0;
-				for (WhereCond cond : conds) {
-					String columnName = cond.getColumnName();
-					Object srcVal = cond.getVal();
-					NexusCmp cexusCmp = cond.getNexusCmp();
-					FieldMapperInfo fim = this.fieldsMapperMap.get(columnName);
-					String val = null;
-					if (srcVal == null && fim != null) {
-						try {
-							if (!(obj instanceof Class)) {
-								val = ClassMapperInfo.adornSqlVal(obj, fim, cexusCmp, null);
-							}
-						} catch (Exception exc) {
-							exc.printStackTrace();
-						}
-					} else if (srcVal != null) {
-						if(cond.isSqlVal()) {
-							val = cexusCmp.code.concat(Constant.SPACE).concat(srcVal.toString());
-						}else {
-							val = buildCmpVal(srcVal, null, cexusCmp,null);  
-						}
-					}
-					if (val != null) {
-						if(index>0) {
-							where.append(cond.getLogicCmp().code);
-						}
-							where.append(Constant.SPACE).append(columnName).append(Constant.SPACE).append(val)
-							.append(Constant.SPACE);
-							index++;
+		if (!conds.isEmpty()) {
+			int index=0;
+			for (WhereCond cond : conds) {
+				List<WhereCond> childConds=cond.getChildCond();
+				if(childConds!=null&&childConds.size()>0) {
+					String childWhere=this.buildWhere(obj, childConds);
+					if(childWhere.length()>0) {
+						where.append(cond.getLogicCmp().code).append(" ( ").append(childWhere).append(" ) ");
 					}
 				}
-				if(where.length()>0) {
-					where.insert(0, SQL.WHERE_PRE);
+				String columnName = cond.getColumnName();
+				Object srcVal = cond.getVal();
+				NexusCmp cexusCmp = cond.getNexusCmp();
+				FieldMapperInfo fim = this.fieldsMapperMap.get(columnName);
+				String val = null;
+				if (srcVal == null && fim != null) {
+					try {
+						if (!(obj instanceof Class)) {
+							val = ClassMapperInfo.adornSqlVal(obj, fim, cexusCmp, null);
+						}
+					} catch (Exception exc) {
+						exc.printStackTrace();
+					}
+				} else if (srcVal != null) {
+					if(cond.isSqlVal()) {
+						val = cexusCmp.code.concat(Constant.SPACE).concat(srcVal.toString());
+					}else {
+						val = buildCmpVal(srcVal, null, cexusCmp,null);  
+					}
+				}
+				if (val != null) {
+					if(index>0) {
+						where.append(cond.getLogicCmp().code);
+					}
+						where.append(Constant.SPACE).append(columnName).append(Constant.SPACE).append(val)
+						.append(Constant.SPACE);
+						index++;
 				}
 			}
+			
+		}
+		return where.toString();
+	}
+	private String buildWhere(Object obj, WhereSql filterSqlBuild) {
+		 StringBuilder where = new StringBuilder();
+		if (obj != null && filterSqlBuild != null) {
+			where.append(this.buildWhere(obj, filterSqlBuild.getConds()));
+		}
+		String nativeSqlConds=filterSqlBuild.getNativeSqlConds();
+		if(StrTool.isNotEmpty(nativeSqlConds)) {
+			if(where.length()>0) {
+				where.append(Constant.SPACE).append(nativeSqlConds);
+			}else {
+				nativeSqlConds=StrTool.trimStr(StrTool.trimStr(nativeSqlConds.trim(),"or"),"OR");
+				nativeSqlConds=StrTool.trimStr(StrTool.trimStr(nativeSqlConds.trim(),"and"),"AND");
+				where.append(nativeSqlConds);
+			}
+		}
+		if(where.length()>0) {
+			where.insert(0, SQL.WHERE_PRE);
 		}
 		return where.toString();
 	}
