@@ -297,7 +297,10 @@ public class ClassMapperInfo {
 		if (obj != null && filterSqlBuild != null) {
 			where.append(this.buildWhere(obj, filterSqlBuild.getConds()));
 		}
-		String nativeSqlConds=filterSqlBuild.getNativeSqlConds();
+		String nativeSqlConds=null;
+		if(filterSqlBuild!=null) {
+		 nativeSqlConds=filterSqlBuild.getNativeSqlConds();
+		}
 		if(StrTool.isNotEmpty(nativeSqlConds)) {
 			if(where.length()>0) {
 				where.append(Constant.SPACE).append(nativeSqlConds);
