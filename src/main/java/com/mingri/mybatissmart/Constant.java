@@ -1,4 +1,4 @@
-package com.ws.mybatissmart;
+package com.mingri.mybatissmart;
 
 public interface Constant {
 	static final String PARAM_KEY = "ek";

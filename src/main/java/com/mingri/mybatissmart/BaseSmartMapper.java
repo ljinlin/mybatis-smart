@@ -1,4 +1,4 @@
-package com.ws.mybatissmart;
+package com.mingri.mybatissmart;
 
 import org.apache.ibatis.annotations.DeleteProvider;
 import org.apache.ibatis.annotations.InsertProvider;
@@ -25,6 +25,7 @@ public interface BaseSmartMapper {
 	@UpdateProvider(method = "updateByWhere", type = BaseMapperSqlProvider.class)
 	int updateByWhere(@Param(Constant.PARAM_KEY) Object e,
 			@Param(Constant.COND_KEY) WhereSql filterSqlBuild);
+	
 
 	@DeleteProvider(method = "deleteById", type = BaseMapperSqlProvider.class)
 	int deleteById(Object idV, Class<?> cl);

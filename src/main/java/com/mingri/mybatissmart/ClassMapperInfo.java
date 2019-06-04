@@ -1,4 +1,4 @@
-package com.ws.mybatissmart;
+package com.mingri.mybatissmart;
 
 import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
@@ -10,15 +10,21 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.ws.commons.algorithm.SequenceGenerate;
-import com.ws.commons.constant.NexusCmp;
-import com.ws.commons.constant.ObjTypeEnum;
-import com.ws.commons.constant.ValTypeEnum;
-import com.ws.commons.tool.StrTool;
-import com.ws.mybatissmart.Constant.SQL;
-import com.ws.mybatissmart.annotation.ColumnInfo;
-import com.ws.mybatissmart.annotation.TableInfo;
-import com.ws.mybatissmart.annotation.TableInfo.IdtacticsEnum;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.alibaba.fastjson.JSONArray;
+import com.mingri.commons.algorithm.SequenceGenerate;
+import com.mingri.commons.constant.LogicCmp;
+import com.mingri.commons.constant.NexusCmp;
+import com.mingri.commons.constant.ObjTypeEnum;
+import com.mingri.commons.constant.ValTypeEnum;
+import com.mingri.commons.tool.StrTool;
+import com.mingri.mybatissmart.Constant.SQL;
+import com.mingri.mybatissmart.annotation.ColumnInfo;
+import com.mingri.mybatissmart.annotation.TableInfo;
+import com.mingri.mybatissmart.annotation.TableInfo.IdtacticsEnum;
+
 
 public class ClassMapperInfo {
 
@@ -28,6 +34,8 @@ public class ClassMapperInfo {
 	private Class<?> clazz;
 	private LinkedHashMap<String, FieldMapperInfo> fieldsMapperMap;// key:columnName
 	private DialectEnums dialect;
+	
+	private static final Logger LOGGER = LoggerFactory.getLogger(ClassMapperInfo.class);
 	
 	public Field getIdField() {
 		return idField;
@@ -77,6 +85,7 @@ public class ClassMapperInfo {
 		this.dialect = dialect;
 	}
 
+	@SuppressWarnings("unchecked")
 	public String getInsertSql(Object obj) throws Exception {
 		ColumnInfo ci = null;
 		String v = null;
@@ -139,8 +148,6 @@ public class ClassMapperInfo {
 						cvSb.append("null").append(",");
 					}
 				} else {
-					// List<ObjTypeEnum> otEs = ClassMapperInfo.arrayToList(ci.insertValType(),
-					// ObjTypeEnum.class);
 					List<ObjTypeEnum> otEs = Arrays.asList(ci.insertValType());
 
 					if (otEs.contains(ObjTypeEnum.ALL)) {
@@ -253,7 +260,7 @@ public class ClassMapperInfo {
 			int index=0;
 			for (WhereCond cond : conds) {
 				List<WhereCond> childConds=cond.getChildCond();
-				if(childConds!=null&&childConds.size()>0) {
+				if(childConds!=null&&!childConds.isEmpty()) {
 					String childWhere=this.buildWhere(obj, childConds);
 					if(childWhere.length()>0) {
 						where.append(cond.getLogicCmp().code).append(" ( ").append(childWhere).append(" ) ");
@@ -270,7 +277,7 @@ public class ClassMapperInfo {
 							val = ClassMapperInfo.adornSqlVal(obj, fim, cexusCmp, null);
 						}
 					} catch (Exception exc) {
-						exc.printStackTrace();
+						LOGGER.error("捕获到异常,打印日志：{}",exc);
 					}
 				} else if (srcVal != null) {
 					if(cond.isSqlVal()) {
@@ -305,8 +312,9 @@ public class ClassMapperInfo {
 			if(where.length()>0) {
 				where.append(Constant.SPACE).append(nativeSqlConds);
 			}else {
-				nativeSqlConds=StrTool.trimStr(StrTool.trimStr(nativeSqlConds.trim(),"or"),"OR");
-				nativeSqlConds=StrTool.trimStr(StrTool.trimStr(nativeSqlConds.trim(),"and"),"AND");
+				nativeSqlConds=StrTool.toString(nativeSqlConds);
+				nativeSqlConds=StrTool.trimStr(StrTool.trimStr(nativeSqlConds.trim(),LogicCmp.or.code),LogicCmp.or.code);
+				nativeSqlConds=StrTool.trimStr(StrTool.trimStr(nativeSqlConds.trim(),LogicCmp.and.code),LogicCmp.and.code);
 				where.append(nativeSqlConds);
 			}
 		}
@@ -320,7 +328,6 @@ public class ClassMapperInfo {
 		String where = buildWhere(obj, filterSqlBuild);
 
 		String orderBy = filterSqlBuild == null ? StrTool.EMPTY : filterSqlBuild.getOrderBy();
-		// if()
 		StringBuilder sql = new StringBuilder(SQL.SELECT).append(this.getColumns())
 				.append(SQL.FROM).append(tableInfo.value());
 		sql.append(where);
@@ -384,7 +391,7 @@ public class ClassMapperInfo {
 	 * @throws IllegalAccessException
 	 */
 	private static Object reflexVal(Object srcObj, FieldMapperInfo fmi)
-			throws IllegalArgumentException, IllegalAccessException {
+			throws  IllegalAccessException {
 		Field fi = fmi.getField();
 		Object srcVal;
 		fi.setAccessible(true);
@@ -406,7 +413,7 @@ public class ClassMapperInfo {
 	 * @throws IllegalAccessException
 	 */
 	private static String adornSqlVal(Object srcObj, FieldMapperInfo fmi, NexusCmp cexusCmp, Integer index)
-			throws IllegalArgumentException, IllegalAccessException {
+			throws  IllegalAccessException {
 		Object srcVal = reflexVal(srcObj, fmi);
 		String val = null;
 		if (srcVal != null) {
@@ -447,6 +454,8 @@ public class ClassMapperInfo {
 		if (fieldName == null) {
 			if (srcVal.getClass() == String.class) {
 				srcValStr = "'".concat(srcValStr).concat("'");
+			}else if(srcVal==ValTypeEnum.BLANK) {
+				srcValStr=ValTypeEnum.BLANK.code;
 			}
 			// ......其他数据类型，暂时不支持处理，只能用户在外面处理
 		} else {
@@ -488,9 +497,11 @@ public class ClassMapperInfo {
 			sqlVal = cexusCmp.code.concat(" concat(").concat(sqlVal).concat(",'%')");
 		} else if (sqlVal.equalsIgnoreCase(ValTypeEnum.NULL.code)) {
 			sqlVal = cexusCmp.code.concat(Constant.SPACE).concat(sqlVal);
+		} else if (srcVal==ValTypeEnum.BLANK) {
+			sqlVal = cexusCmp.code.concat(Constant.SPACE).concat("''");
 		} else if (cexusCmp == NexusCmp.in || cexusCmp == NexusCmp.not_in) {
 			if (srcVal.getClass().isArray()) {
-				srcVal = Arrays.asList((Object[]) srcVal);
+				srcVal = JSONArray.parseArray(JSONArray.toJSONString(srcVal),Object.class);  
 			}
 			if (srcVal instanceof Collection) {
 				Collection<?> clt = (Collection<?>) srcVal;

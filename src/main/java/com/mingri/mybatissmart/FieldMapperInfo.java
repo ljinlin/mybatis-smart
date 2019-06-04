@@ -1,8 +1,8 @@
-package com.ws.mybatissmart;
+package com.mingri.mybatissmart;
 
 import java.lang.reflect.Field;
 
-import com.ws.mybatissmart.annotation.ColumnInfo;
+import com.mingri.mybatissmart.annotation.ColumnInfo;
 
 public class FieldMapperInfo {
 

@@ -1,4 +1,4 @@
-package com.ws.mybatissmart;
+package com.mingri.mybatissmart;
 
 import java.util.List;
 
@@ -59,11 +59,11 @@ public class BaseMapperSqlProvider {
 	public String insert(@Param(Constant.PARAM_KEY) Object obj) {
 		Object entity = obj;
 		Class<?> clazz = null;
-		long sttime=System.currentTimeMillis();
+		long sttime = System.currentTimeMillis();
 		if (obj instanceof ParamMap) {
 			entity = ((ParamMap<?>) obj).get(Constant.PARAM_KEY);
 			if (entity instanceof List) {
-				clazz = ((List) entity).get(0).getClass();
+				clazz = ((List<?>) entity).get(0).getClass();
 			} else {
 				clazz = entity.getClass();
 			}
@@ -72,10 +72,10 @@ public class BaseMapperSqlProvider {
 		String sql = null;
 		try {
 			sql = cmi.getInsertSql(entity);
-			long edtime=System.currentTimeMillis();
-			LOGGER.info("构建SQL耗时:"+(edtime-sttime)+" "+sql);
+			long edtime = System.currentTimeMillis();
+			LOGGER.info("构建SQL耗时:{},sql:{}", (edtime - sttime), sql);
 		} catch (Exception e) {
-			e.printStackTrace();
+			LOGGER.error("捕获到异常,打印日志：{}", e);
 		}
 		return sql;
 	}
@@ -91,7 +91,7 @@ public class BaseMapperSqlProvider {
 			sql = cmi.getUpdateByIdSql(entity);
 			LOGGER.info(sql);
 		} catch (Exception e) {
-			e.printStackTrace();
+			LOGGER.error("", e);
 		}
 		return sql;
 	}
@@ -102,20 +102,20 @@ public class BaseMapperSqlProvider {
 			entity = ((ParamMap<?>) obj).get(Constant.PARAM_KEY);
 		}
 		ClassMapperInfo cmi = MybatisSmartContext.getClassMapperInfo(entity.getClass());
-		String sql=null;
+		String sql = null;
 		try {
 			sql = cmi.getUpdateByWhereSql(entity, cond);
 			LOGGER.info(sql);
 		} catch (Exception e) {
-			e.printStackTrace();
+			LOGGER.error("", e);
 		}
 		return sql;
 	}
 
-	public String deleteById(Object obj, Class<?> cl) {
-		Object entity = obj;
-		if (obj instanceof ParamMap) {
-			entity = ((ParamMap<?>) obj).get(Constant.PARAM_KEY);
+	public String deleteById(Object idV, Class<?> cl) {
+		Object entity = idV;
+		if (idV instanceof ParamMap) {
+			entity = ((ParamMap<?>) idV).get(Constant.PARAM_KEY);
 		}
 		ClassMapperInfo cmi = MybatisSmartContext.getClassMapperInfo(cl);
 		String sql = cmi.getDeleteByIdSql(entity);

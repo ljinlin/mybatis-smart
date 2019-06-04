@@ -1,4 +1,5 @@
-/*package com.ws.mybatissmart;
+package com.mingri.mybatissmart;
+/*package com.mingri.mybatissmart;
 
 import java.util.Properties;
 import java.util.concurrent.Executor;

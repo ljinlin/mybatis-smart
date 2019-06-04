@@ -1,9 +1,9 @@
-package com.ws.mybatissmart;
+package com.mingri.mybatissmart;
 
 import java.util.List;
 
-import com.ws.commons.constant.LogicCmp;
-import com.ws.commons.constant.NexusCmp;
+import com.mingri.commons.constant.LogicCmp;
+import com.mingri.commons.constant.NexusCmp;
 
 
 public class WhereCond {

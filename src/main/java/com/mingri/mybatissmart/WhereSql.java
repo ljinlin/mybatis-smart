@@ -1,21 +1,21 @@
-package com.ws.mybatissmart;
+package com.mingri.mybatissmart;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import com.ws.commons.constant.LogicCmp;
-import com.ws.commons.constant.NexusCmp;
-import com.ws.commons.constant.OrderChar;
-import com.ws.commons.constant.ValTypeEnum;
-import com.ws.commons.tool.StrTool;
-import com.ws.mybatissmart.Constant.SQL;
+import com.mingri.commons.constant.LogicCmp;
+import com.mingri.commons.constant.NexusCmp;
+import com.mingri.commons.constant.OrderChar;
+import com.mingri.commons.constant.ValTypeEnum;
+import com.mingri.commons.tool.StrTool;
+import com.mingri.mybatissmart.Constant.SQL;
 
 public class WhereSql {
 
 	private String orderBy = StrTool.EMPTY;
 	private Integer offset;
 	private Integer limit;
-	private List<WhereCond> conds = new ArrayList<WhereCond>();
+	private List<WhereCond> conds = new ArrayList<>();
 
 	private String nativeSqlConds;
 	

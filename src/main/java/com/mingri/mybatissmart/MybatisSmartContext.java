@@ -1,10 +1,9 @@
-package com.ws.mybatissmart;
+package com.mingri.mybatissmart;
 
 import static org.springframework.util.StringUtils.hasLength;
 import static org.springframework.util.StringUtils.tokenizeToStringArray;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.JarURLConnection;
@@ -12,6 +11,7 @@ import java.net.URL;
 import java.net.URLDecoder;
 import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -27,21 +27,22 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ConfigurableApplicationContext;
 
-import com.ws.commons.tool.ClassTool;
-import com.ws.commons.tool.StrTool;
-import com.ws.mybatissmart.annotation.ColumnInfo;
-import com.ws.mybatissmart.annotation.RefTable;
-import com.ws.mybatissmart.annotation.TableInfo;
-
-import cn.hutool.core.util.ClassUtil;
+import com.mingri.commons.tool.ClassTool;
+import com.mingri.commons.tool.StrTool;
+import com.mingri.mybatissmart.annotation.ColumnInfo;
+import com.mingri.mybatissmart.annotation.RefTable;
+import com.mingri.mybatissmart.annotation.TableInfo;
 
 public class MybatisSmartContext {
+
+	private MybatisSmartContext() {
+	}
 
 	private static SqlSessionFactory sessionFactory;
 	private static MybatisSmartProperties mybatisSmartProperties;
 
-	public static final Map<Class<?>, ClassMapperInfo> MAPPERS_INFO = new HashMap<Class<?>, ClassMapperInfo>();
-  
+	private static final Map<Class<?>, ClassMapperInfo> MAPPERS_INFO = new HashMap<>();
+
 	private static final Logger LOGGER = LoggerFactory.getLogger(MybatisSmartContext.class);
 
 	static void initConf(SqlSessionFactory sessionFactory, MybatisSmartProperties mybatisSmartProperties) {
@@ -56,7 +57,7 @@ public class MybatisSmartContext {
 			return res;
 		} else {
 			cl = cl.getSuperclass();
-			while (cl != null && cl != Object.class && res == null) {
+			while (cl != null && cl != Object.class) {
 				if (cl.getAnnotation(TableInfo.class) != null) {
 					res = MAPPERS_INFO.get(cl.getSuperclass());
 					if (res == null) {
@@ -88,21 +89,17 @@ public class MybatisSmartContext {
 	private static Map<String, String> getColumnAndFieldName(String tableName) {
 		List<String> columns = MybatisSmartContext.selectColumns(tableName);
 		Map<String, String> columnsCamel = new HashMap<>();
-		columns.forEach(column -> {
-			columnsCamel.put(StrTool.camel(column.toLowerCase()), column.toLowerCase());
-		});
+		columns.forEach(column -> columnsCamel.put(StrTool.camel(column.toLowerCase()), column.toLowerCase()));
 		return columnsCamel;
 	}
 
 	private static List<String> selectColumns(String tableName) {
-		List<String> columns=null;
-		try(SqlSession session=MybatisSmartContext.sessionFactory.openSession()) {
-			 columns = session.selectList(SelfMapper.SELECTFIELDS_STATEMENT,
-					tableName.replace("[", "").replace("]", ""));
+		try (SqlSession session = MybatisSmartContext.sessionFactory.openSession()) {
+			return session.selectList(SelfMapper.SELECTFIELDS_STATEMENT, tableName.replace("[", "").replace("]", ""));
 		} catch (Exception e) {
-			e.printStackTrace();
+			LOGGER.error("捕获到异常,打印日志：{}", e);
 		}
-		return columns;
+		return Collections.emptyList();
 	}
 
 	private static final Object LOAD_LOCAL = new Object();
@@ -135,11 +132,10 @@ public class MybatisSmartContext {
 			if (idFieldName.length() == 0) {
 				throw new MybatisSmartException(TableInfo.class.getCanonicalName() + " 的idFieldName value 不能为空");
 			}
-			Map<String, String> columnsCamel=getColumnAndFieldName(tableInfo.value());  
-			
-			
+			Map<String, String> columnsCamel = getColumnAndFieldName(tableInfo.value());
+
 			List<Field> flist = ClassTool.getDecararedFields(cl, false);
-			LinkedHashMap<String, FieldMapperInfo> fieldsMapperMap = new LinkedHashMap<String, FieldMapperInfo>();
+			LinkedHashMap<String, FieldMapperInfo> fieldsMapperMap = new LinkedHashMap<>();
 
 			ClassMapperInfo res = new ClassMapperInfo();
 			res.setDialect(getDialect());
@@ -160,7 +156,7 @@ public class MybatisSmartContext {
 					} else if (fieldMapperInfo.getField().getDeclaringClass()
 							.isAssignableFrom(field.getDeclaringClass())) {// 子类字段覆盖父类字段
 						fieldMapperInfo.setField(field);
-					}  
+					}
 				} else {
 					columnName = columnsCamel.get(field.getName());
 					if (columnName != null) {
@@ -186,56 +182,53 @@ public class MybatisSmartContext {
 		}
 	}
 
-	private static final int CLASSFILE_SUFX_LEN = ".class".length();
+	private static final String CLASSFILE_SUFX = ".class";
 
 	private static DialectEnums getDialect() {
-		if(MAPPERS_INFO.size()>0) {
+		if (MAPPERS_INFO.size() > 0) {
 			return MAPPERS_INFO.entrySet().iterator().next().getValue().getDialect();
 		}
-		SqlSession session=null;
-		Connection conn=null;
+		SqlSession session = null;
+		Connection conn = null;
 		try {
 			session = MybatisSmartContext.sessionFactory.openSession();
-			conn=session.getConnection();
+			conn = session.getConnection();
 			return Tool.getDialect(conn);
 		} finally {
-			if(conn!=null) {
+			if (conn != null) {
 				session.close();
 			}
-			if(session!=null) {
+			if (session != null) {
 				session.close();
 			}
 		}
 	}
-	
+
 	/**
 	 * 扫描数据模型
 	 * 
 	 * @throws IOException
 	 */
-	public static void scanDataModel() throws IOException {
+	public static void scanDataModel() {
 		String mdpkg = mybatisSmartProperties.getModelPackage();
-		LOGGER.info("==============================MybatisSmart开始扫描实体类,扫描的包{}",mdpkg);
+		LOGGER.info("==============================MybatisSmart开始扫描实体类,扫描的包{}", mdpkg);
 		if (hasLength(mdpkg)) {
 			String[] typeAliasPackageArray = tokenizeToStringArray(mdpkg,
 					ConfigurableApplicationContext.CONFIG_LOCATION_DELIMITERS);
 			ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
 			for (String packageToScan : typeAliasPackageArray) {
-//				packageToScan=packageToScan.replace('.', '/');
-				LOGGER.info("==============================MybatisSmart开始扫描包{}",packageToScan);
-//				List<String> classList1=VFS.getInstance().list(packageToScan);
-				List<String> classList=scanClass(packageToScan,true);
-				LOGGER.info("==============================MybatisSmart扫描到的类******{}",classList);
+				LOGGER.info("==============================MybatisSmart开始扫描包{}", packageToScan);
+				List<String> classList = scanClass(packageToScan, true);
+				LOGGER.info("==============================MybatisSmart扫描到的类******{}", classList);
 				classList.forEach(e -> {
-					if (e.endsWith(".class")) {
+					if (e.endsWith(CLASSFILE_SUFX)) {
 						try {
 							Class<?> cl = classLoader
-									.loadClass(e.replace('/', '.').substring(0, e.length() - CLASSFILE_SUFX_LEN));
-							 MybatisSmartContext.loadClassMapperInfo(cl);
-								LOGGER.info("MybatisSmart Scanned class: '" + e + "' for modelPackage");
+									.loadClass(e.replace('/', '.').substring(0, e.length() - CLASSFILE_SUFX.length()));
+							MybatisSmartContext.loadClassMapperInfo(cl);
+							LOGGER.info("MybatisSmart Scanned class: {} for modelPackage", e);
 						} catch (ClassNotFoundException e1) {
-							LOGGER.info("MybatisSmart 扫描类出错:{}",e1.getMessage());
-							e1.printStackTrace();
+							LOGGER.error("MybatisSmart 扫描类出错:：{}", e1);
 						}
 					}
 
@@ -252,8 +245,8 @@ public class MybatisSmartContext {
 	 * @param recursive 是否循环迭代
 	 * @return
 	 */
-	private static List<String> scanClass(String packageName,boolean recursive) {
- 
+	private static List<String> scanClass(String packageName, boolean recursive) {
+
 		// 第一个class类的集合
 		List<String> classes = new ArrayList<>();
 		// 获取包的名字 并进行替换
@@ -276,11 +269,8 @@ public class MybatisSmartContext {
 					findAndAddClassesInPackageByFile(packageName, filePath, recursive, classes);
 				} else if ("jar".equals(protocol)) {
 					// 如果是jar包文件
-					// 定义一个JarFile
-					JarFile jar;
-					try {
-						// 获取jar
-						jar = ((JarURLConnection) url.openConnection()).getJarFile();
+					// 获取jar
+					try (JarFile jar = ((JarURLConnection) url.openConnection()).getJarFile();) {
 						// 从此jar包 得到一个枚举类
 						Enumeration<JarEntry> entries = jar.entries();
 						// 同样的进行循环迭代
@@ -301,24 +291,20 @@ public class MybatisSmartContext {
 									// 获取包名 把"/"替换成"."
 									packageName = name.substring(0, idx).replace('/', '.');
 								}
-								// 如果可以迭代下去 并且是一个包
-								if ((idx != -1) || recursive) {
-									// 如果是一个.class文件 而且不是目录
-									if (name.endsWith(".class") && !entry.isDirectory()) {
-										classes.add(name.replace('/', '.'));
-									}
+								// 如果可以迭代下去 并且是一个包 如果是一个.class文件 而且不是目录
+								if (((idx != -1) || recursive)
+										&& (name.endsWith(CLASSFILE_SUFX) && !entry.isDirectory())) {
+									classes.add(name.replace('/', '.'));
 								}
 							}
 						}
-					} catch (IOException e) {
-						e.printStackTrace();
 					}
 				}
 			}
 		} catch (IOException e) {
-			e.printStackTrace();
+			LOGGER.error("捕获到异常,打印日志：{}", e);
 		}
- 
+
 		return classes;
 	}
 
@@ -330,7 +316,8 @@ public class MybatisSmartContext {
 	 * @param recursive
 	 * @param classes
 	 */
-	private static void findAndAddClassesInPackageByFile(String packageName, String packagePath, final boolean recursive, List<String> classes) {
+	private static void findAndAddClassesInPackageByFile(String packageName, String packagePath,
+			final boolean recursive, List<String> classes) {
 		// 获取此包的目录 建立一个File
 		File dir = new File(packagePath);
 		// 如果不存在或者 也不是目录就直接返回
@@ -338,30 +325,28 @@ public class MybatisSmartContext {
 			return;
 		}
 		// 如果存在 就获取包下的所有文件 包括目录
-		File[] dirfiles = dir.listFiles(new FileFilter() {
-			// 自定义过滤规则 如果可以循环(包含子目录) 或则是以.class结尾的文件(编译好的java类文件)
-			public boolean accept(File file) {
-				return (recursive && file.isDirectory()) || (file.getName().endsWith(".class"));
-			}
-		});
+		// 自定义过滤规则 如果可以循环(包含子目录) 或则是以.class结尾的文件(编译好的java类文件)
+		File[] dirfiles = dir
+				.listFiles(file -> (recursive && file.isDirectory()) || (file.getName().endsWith(CLASSFILE_SUFX)));
 		// 循环所有文件
 		for (File file : dirfiles) {
 			// 如果是目录 则继续扫描
 			if (file.isDirectory()) {
-				findAndAddClassesInPackageByFile(packageName + "." + file.getName(), file.getAbsolutePath(), recursive, classes);
+				findAndAddClassesInPackageByFile(packageName + "." + file.getName(), file.getAbsolutePath(), recursive,
+						classes);
 			} else {
 				// 如果是java类文件 去掉后面的.class 只留下类名
-					classes.add(packageName + '.'+file.getName());
+				classes.add(packageName + '.' + file.getName());
 			}
 		}
 	}
-	
+
 	public static Set<String> getColumns(Class<?> cl) {
 		ClassMapperInfo res = getClassMapperInfo(cl);
 		if (res != null) {
 			return res.getFieldsMapperMap().keySet();
 		}
-		return null;
+		return Collections.emptySet();
 	}
 
 	public static String getTable(Class<?> cl) {

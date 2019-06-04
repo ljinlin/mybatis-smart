@@ -1,21 +1,13 @@
-package com.ws.mybatissmart;
+package com.mingri.mybatissmart;
 
-import java.io.File;
-import java.io.FileFilter;
-import java.io.IOException;
-import java.net.JarURLConnection;
-import java.net.URL;
-import java.net.URLDecoder;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Set;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 
 public class Tool {
+	
+	private Tool() {
+	}
+	
 	/**
 	 * 获取url
 	 *

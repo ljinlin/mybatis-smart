@@ -1,4 +1,4 @@
-package com.ws.mybatissmart.annotation;
+package com.mingri.mybatissmart.annotation;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -6,7 +6,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import com.ws.commons.constant.ObjTypeEnum;
+import com.mingri.commons.constant.ObjTypeEnum;
 
 @Target({ ElementType.FIELD })
 @Retention(RetentionPolicy.RUNTIME)
