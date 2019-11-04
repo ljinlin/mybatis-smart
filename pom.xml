@@ -9,7 +9,7 @@
 	<dependencies>
 		<dependency>
 			<groupId>com.mingri</groupId>
-			<artifactId>commons</artifactId>
+			<artifactId>langhuan-cabinet</artifactId>
 			<version>1.0.0-beta1</version>
 		</dependency>
 		<dependency>

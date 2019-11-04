@@ -6,7 +6,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import com.mingri.commons.constant.ObjTypeEnum;
+import com.mingri.langhuan.cabinet.constant.ObjTypeEnum;
 
 @Target({ ElementType.FIELD })
 @Retention(RetentionPolicy.RUNTIME)

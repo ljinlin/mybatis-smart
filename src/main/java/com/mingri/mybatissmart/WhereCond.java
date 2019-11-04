@@ -2,8 +2,8 @@ package com.mingri.mybatissmart;
 
 import java.util.List;
 
-import com.mingri.commons.constant.LogicCmp;
-import com.mingri.commons.constant.NexusCmp;
+import com.mingri.langhuan.cabinet.constant.LogicCmp;
+import com.mingri.langhuan.cabinet.constant.NexusCmp;
 
 
 public class WhereCond {

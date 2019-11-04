@@ -27,8 +27,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ConfigurableApplicationContext;
 
-import com.mingri.commons.tool.ClassTool;
-import com.mingri.commons.tool.StrTool;
+import com.mingri.langhuan.cabinet.tool.ClassTool;
+import com.mingri.langhuan.cabinet.tool.StrTool;
 import com.mingri.mybatissmart.annotation.ColumnInfo;
 import com.mingri.mybatissmart.annotation.RefTable;
 import com.mingri.mybatissmart.annotation.TableInfo;

@@ -3,11 +3,11 @@ package com.mingri.mybatissmart;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.mingri.commons.constant.LogicCmp;
-import com.mingri.commons.constant.NexusCmp;
-import com.mingri.commons.constant.OrderChar;
-import com.mingri.commons.constant.ValTypeEnum;
-import com.mingri.commons.tool.StrTool;
+import com.mingri.langhuan.cabinet.constant.LogicCmp;
+import com.mingri.langhuan.cabinet.constant.NexusCmp;
+import com.mingri.langhuan.cabinet.constant.OrderChar;
+import com.mingri.langhuan.cabinet.constant.ValTypeEnum;
+import com.mingri.langhuan.cabinet.tool.StrTool;
 import com.mingri.mybatissmart.Constant.SQL;
 
 public class WhereSql {

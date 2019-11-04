@@ -14,12 +14,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.alibaba.fastjson.JSONArray;
-import com.mingri.commons.algorithm.SequenceGenerate;
-import com.mingri.commons.constant.LogicCmp;
-import com.mingri.commons.constant.NexusCmp;
-import com.mingri.commons.constant.ObjTypeEnum;
-import com.mingri.commons.constant.ValTypeEnum;
-import com.mingri.commons.tool.StrTool;
+import com.mingri.langhuan.cabinet.algorithm.SequenceGenerate;
+import com.mingri.langhuan.cabinet.constant.LogicCmp;
+import com.mingri.langhuan.cabinet.constant.NexusCmp;
+import com.mingri.langhuan.cabinet.constant.ObjTypeEnum;
+import com.mingri.langhuan.cabinet.constant.ValTypeEnum;
+import com.mingri.langhuan.cabinet.tool.StrTool;
 import com.mingri.mybatissmart.Constant.SQL;
 import com.mingri.mybatissmart.annotation.ColumnInfo;
 import com.mingri.mybatissmart.annotation.TableInfo;
