@@ -1,11 +1,15 @@
-package com.mingri.mybatissmart;
+package com.mingri.mybatissmart.dbo;
 
 import java.util.List;
 
 import com.mingri.langhuan.cabinet.constant.LogicCmp;
 import com.mingri.langhuan.cabinet.constant.NexusCmp;
 
-
+/**
+ * where 条件 节点
+ * @author ljl
+ *
+ */
 public class WhereCond {
 
 	private NexusCmp nexusCmp;

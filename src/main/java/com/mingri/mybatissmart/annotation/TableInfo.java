@@ -6,58 +6,46 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.springframework.core.annotation.AliasFor;
+
+import com.mingri.mybatissmart.barracks.IdtacticsEnum;
+
+/**
+ * 数据库表信息
+ * @author ljl
+ *
+ */
 @Target({ ElementType.TYPE })
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 public @interface TableInfo {
 
 	/**
-	 * 表名
+	 *  表名
 	 */
 	String value() default "";
+	
+	/**
+	 *  表名
+	 */
+	@AliasFor("value")
+	String name() default "";
 
 	/**
 	 * 
-	 * 别名
+	 * 表别名
 	 */
 	String alias() default "";
 	
 	/**
 	 * id生成策略
-	 * @return
+	 * @return id生成策略枚举
 	 */
 	IdtacticsEnum idtactics() default IdtacticsEnum.DFT;
 
 	/**
 	 * id列对应的字段名称
-	 * @return
+	 * @return id字段
 	 */
 	String idFieldName() default "id";
-	
-	/**
-	 * id生成策略
-	 * 
-	 * @author ljl·尘无尘
-	 * @date Oct 29, 2018
-	 */
-	enum IdtacticsEnum {
-		
-		
-		/**
-		 * 数据库自增
-		 */
-		SQL_INCR,
-		
-		
-		/**
-		 * 插件默认生成
-		 */
-		DFT,
-		
-		
-		/**
-		 * 自定义
-		 */
-		DEFINED
-	}
 }

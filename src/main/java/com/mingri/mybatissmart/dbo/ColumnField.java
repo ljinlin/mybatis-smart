@@ -1,21 +1,21 @@
-package com.mingri.mybatissmart;
+package com.mingri.mybatissmart.dbo;
 
 import java.lang.reflect.Field;
 
 import com.mingri.mybatissmart.annotation.ColumnInfo;
 
-public class FieldMapperInfo {
+public class ColumnField {
 
 	private Field field;
 	private ColumnInfo columnInfo;
 
-	public FieldMapperInfo(Field field, ColumnInfo columnInfo) {
+	public ColumnField(Field field, ColumnInfo columnInfo) {
 		super();
 		this.field = field;
 		this.columnInfo = columnInfo;
 	}
 
-	public FieldMapperInfo() {
+	public ColumnField() {
 	}
 
 	public Field getField() {

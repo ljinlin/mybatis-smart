@@ -1,4 +1,4 @@
-package com.mingri.mybatissmart;
+package com.mingri.mybatissmart.dbo;
 
 import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
@@ -20,22 +20,25 @@ import com.mingri.langhuan.cabinet.constant.NexusCmp;
 import com.mingri.langhuan.cabinet.constant.ObjTypeEnum;
 import com.mingri.langhuan.cabinet.constant.ValTypeEnum;
 import com.mingri.langhuan.cabinet.tool.StrTool;
-import com.mingri.mybatissmart.Constant.SQL;
+import com.mingri.mybatissmart.MybatisSmartException;
 import com.mingri.mybatissmart.annotation.ColumnInfo;
 import com.mingri.mybatissmart.annotation.TableInfo;
-import com.mingri.mybatissmart.annotation.TableInfo.IdtacticsEnum;
+import com.mingri.mybatissmart.barracks.Constant;
+import com.mingri.mybatissmart.barracks.DialectEnum;
+import com.mingri.mybatissmart.barracks.IdtacticsEnum;
+import com.mingri.mybatissmart.barracks.SqlKwd;
 
 
-public class ClassMapperInfo {
+public class TableClass {
 
 	private TableInfo tableInfo;
 	private Field idField;
 	private String idColumnName;
 	private Class<?> clazz;
-	private LinkedHashMap<String, FieldMapperInfo> fieldsMapperMap;// key:columnName
-	private DialectEnums dialect;
+	private LinkedHashMap<String, ColumnField> fieldsMapperMap;// key:columnName
+	private DialectEnum dialect;
 	
-	private static final Logger LOGGER = LoggerFactory.getLogger(ClassMapperInfo.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(TableClass.class);
 	
 	public Field getIdField() {
 		return idField;
@@ -61,11 +64,11 @@ public class ClassMapperInfo {
 		this.clazz = clazz;
 	}
 
-	public LinkedHashMap<String, FieldMapperInfo> getFieldsMapperMap() {
+	public LinkedHashMap<String, ColumnField> getFieldsMapperMap() {
 		return fieldsMapperMap;
 	}
 
-	public void setFieldsMapperMap(LinkedHashMap<String, FieldMapperInfo> fieldsMapperMap) {
+	public void setFieldsMapperMap(LinkedHashMap<String, ColumnField> fieldsMapperMap) {
 		this.fieldsMapperMap = fieldsMapperMap;
 	}
 
@@ -77,11 +80,11 @@ public class ClassMapperInfo {
 		this.idColumnName = idColumnName;
 	}
 
-	public DialectEnums getDialect() {
+	public DialectEnum getDialect() {
 		return dialect;
 	}
 
-	public void setDialect(DialectEnums dialect) {
+	public void setDialect(DialectEnum dialect) {
 		this.dialect = dialect;
 	}
 
@@ -91,7 +94,7 @@ public class ClassMapperInfo {
 		String v = null;
 		Field fi = null;
 
-		StringBuilder sql = new StringBuilder(SQL.INSERT_INTO).append(tableInfo.value());
+		StringBuilder sql = new StringBuilder(SqlKwd.INSERT_INTO).append(tableInfo.value());
 		StringBuilder clSb = new StringBuilder(" (");
 		StringBuilder cvSb = new StringBuilder(" values(");
 
@@ -104,7 +107,7 @@ public class ClassMapperInfo {
 			objList.add(obj);
 		}
 		for (Object paramEntity : objList) {
-			for (Map.Entry<String, FieldMapperInfo> en : fieldsMapperMap.entrySet()) {
+			for (Map.Entry<String, ColumnField> en : fieldsMapperMap.entrySet()) {
 				fi = en.getValue().getField();
 				ci = en.getValue().getColumnInfo();
 				if (ci != null && ci.isInsert()==false) {
@@ -131,7 +134,7 @@ public class ClassMapperInfo {
 				 * 没配置insertValType 或者insertValType为''
 				 */
 
-				v = ClassMapperInfo.adornSqlVal(paramEntity, en.getValue(), null, i);
+				v = TableClass.adornSqlVal(paramEntity, en.getValue(), null, i);
 				if (ci == null || ci.insertValType().length == 0) {
 					/*
 					 * 不插入空字符串和null值、"null"、" "
@@ -207,7 +210,7 @@ public class ClassMapperInfo {
 		StringBuilder sql = new StringBuilder(" update ").append(tableInfo.value()).append(" set ");
 		StringBuilder setSb = new StringBuilder();
 
-		for (Map.Entry<String, FieldMapperInfo> en : fieldsMapperMap.entrySet()) {
+		for (Map.Entry<String, ColumnField> en : fieldsMapperMap.entrySet()) {
 			fi = en.getValue().getField();
 			if (fi.getName().equals(tableInfo.idFieldName())) {
 				continue;
@@ -217,7 +220,7 @@ public class ClassMapperInfo {
 				continue;
 			}
 			fi.setAccessible(true);
-			v = ClassMapperInfo.adornSqlVal(obj, en.getValue(), null, null);
+			v = TableClass.adornSqlVal(obj, en.getValue(), null, null);
 			if (ci == null || ci.updateValType().length == 0) {
 				if (StrTool.checkNotEmpty(v)) {
 					setSb.append(en.getKey()).append("=").append(v).append(",");
@@ -248,8 +251,8 @@ public class ClassMapperInfo {
 		if (StrTool.checkEmpty(idV)) {
 			throw new MybatisSmartException("条件字段" + tableInfo.idFieldName() + "的值不能为null");
 		}
-		StringBuilder sql = new StringBuilder(SQL.SELECT).append(this.getColumns()).append(SQL.FROM)
-				.append(tableInfo.value()).append(SQL.WHERE_PRE).append(idColumnName).append("='" + idV + "'");
+		StringBuilder sql = new StringBuilder(SqlKwd.SELECT).append(this.getColumns()).append(SqlKwd.FROM)
+				.append(tableInfo.value()).append(SqlKwd.WHERE_PRE).append(idColumnName).append("='" + idV + "'");
 
 		return sql.toString();
 	}
@@ -269,12 +272,12 @@ public class ClassMapperInfo {
 				String columnName = cond.getColumnName();
 				Object srcVal = cond.getVal();
 				NexusCmp cexusCmp = cond.getNexusCmp();
-				FieldMapperInfo fim = this.fieldsMapperMap.get(columnName);
+				ColumnField fim = this.fieldsMapperMap.get(columnName);
 				String val = null;
 				if (srcVal == null && fim != null) {
 					try {
 						if (!(obj instanceof Class)) {
-							val = ClassMapperInfo.adornSqlVal(obj, fim, cexusCmp, null);
+							val = TableClass.adornSqlVal(obj, fim, cexusCmp, null);
 						}
 					} catch (Exception exc) {
 						LOGGER.error("捕获到异常,打印日志：{}",exc);
@@ -313,13 +316,13 @@ public class ClassMapperInfo {
 				where.append(Constant.SPACE).append(nativeSqlConds);
 			}else {
 				nativeSqlConds=StrTool.toString(nativeSqlConds);
-				nativeSqlConds=StrTool.trimStr(StrTool.trimStr(nativeSqlConds.trim(),LogicCmp.or.code),LogicCmp.or.code);
-				nativeSqlConds=StrTool.trimStr(StrTool.trimStr(nativeSqlConds.trim(),LogicCmp.and.code),LogicCmp.and.code);
+				nativeSqlConds=StrTool.trimStr(StrTool.trimStr(nativeSqlConds.trim(),LogicCmp.OR.code),LogicCmp.OR.code);
+				nativeSqlConds=StrTool.trimStr(StrTool.trimStr(nativeSqlConds.trim(),LogicCmp.AND.code),LogicCmp.AND.code);
 				where.append(nativeSqlConds);
 			}
 		}
 		if(where.length()>0) {
-			where.insert(0, SQL.WHERE_PRE);
+			where.insert(0, SqlKwd.WHERE_PRE);
 		}
 		return where.toString();
 	}
@@ -328,8 +331,8 @@ public class ClassMapperInfo {
 		String where = buildWhere(obj, filterSqlBuild);
 
 		String orderBy = filterSqlBuild == null ? StrTool.EMPTY : filterSqlBuild.getOrderBy();
-		StringBuilder sql = new StringBuilder(SQL.SELECT).append(this.getColumns())
-				.append(SQL.FROM).append(tableInfo.value());
+		StringBuilder sql = new StringBuilder(SqlKwd.SELECT).append(this.getColumns())
+				.append(SqlKwd.FROM).append(tableInfo.value());
 		sql.append(where);
 		if (StrTool.checkNotEmpty(orderBy)) {
 			sql.append(orderBy);
@@ -338,10 +341,10 @@ public class ClassMapperInfo {
 		if(limit!=null) {
 			switch (dialect) {
 			case MYSQL:
-				sql.append(SQL.LIMIT).append(limit).append(SQL.OFFSET).append(filterSqlBuild.getOffset());
+				sql.append(SqlKwd.LIMIT).append(limit).append(SqlKwd.OFFSET).append(filterSqlBuild.getOffset());
 				break;
 			case SQLSERVER:
-				sql.append(SQL.OFFSET).append(filterSqlBuild.getOffset()).append(" rows fetch next ").append(limit).append(" rows only ");
+				sql.append(SqlKwd.OFFSET).append(filterSqlBuild.getOffset()).append(" rows fetch next ").append(limit).append(" rows only ");
 				break;
 			default:
 				break;
@@ -361,7 +364,7 @@ public class ClassMapperInfo {
 	public String getDeleteByWhereSql(Object obj, WhereSql filterSqlBuild) {
 		String where = buildWhere(obj, filterSqlBuild);
 		if (StrTool.checkNotEmpty(where)) {
-			StringBuilder sql = new StringBuilder(SQL.DELETE).append(SQL.FROM).append(tableInfo.value()).append(where);
+			StringBuilder sql = new StringBuilder(SqlKwd.DELETE).append(SqlKwd.FROM).append(tableInfo.value()).append(where);
 			return sql.toString();
 		}
 		return null;
@@ -371,7 +374,7 @@ public class ClassMapperInfo {
 		if (StrTool.checkEmpty(idV)) {
 			throw new MybatisSmartException("条件字段" + tableInfo.idFieldName() + "的值不能为null");
 		}
-		StringBuilder sql = new StringBuilder(SQL.DELETE).append(SQL.FROM).append(tableInfo.value()).append(SQL.WHERE_PRE)
+		StringBuilder sql = new StringBuilder(SqlKwd.DELETE).append(SqlKwd.FROM).append(tableInfo.value()).append(SqlKwd.WHERE_PRE)
 				.append(idColumnName).append("='" + idV + "'");
 		return sql.toString();
 	}
@@ -390,7 +393,7 @@ public class ClassMapperInfo {
 	 * @throws IllegalArgumentException
 	 * @throws IllegalAccessException
 	 */
-	private static Object reflexVal(Object srcObj, FieldMapperInfo fmi)
+	private static Object reflexVal(Object srcObj, ColumnField fmi)
 			throws  IllegalAccessException {
 		Field fi = fmi.getField();
 		Object srcVal;
@@ -412,7 +415,7 @@ public class ClassMapperInfo {
 	 * @throws IllegalArgumentException
 	 * @throws IllegalAccessException
 	 */
-	private static String adornSqlVal(Object srcObj, FieldMapperInfo fmi, NexusCmp cexusCmp, Integer index)
+	private static String adornSqlVal(Object srcObj, ColumnField fmi, NexusCmp cexusCmp, Integer index)
 			throws  IllegalAccessException {
 		Object srcVal = reflexVal(srcObj, fmi);
 		String val = null;
@@ -474,7 +477,7 @@ public class ClassMapperInfo {
 	 * @param cexusCmp
 	 * @return
 	 */
-	private static String buildCmpVal(Object srcVal, FieldMapperInfo fmi, NexusCmp cexusCmp, Integer index) {
+	private static String buildCmpVal(Object srcVal, ColumnField fmi, NexusCmp cexusCmp, Integer index) {
 		if (srcVal == null) {
 			return null;
 		}
@@ -535,7 +538,7 @@ public class ClassMapperInfo {
 		StringBuilder cls = new StringBuilder();
 		String clsStr = null;
 		this.fieldsMapperMap.forEach((k, v) -> {
-			cls.append(k).append(SQL.AS).append(v.getField().getName()).append(",");
+			cls.append(k).append(SqlKwd.AS).append(v.getField().getName()).append(",");
 			// cls.append(k).append(",");
 		});
 		if (cls.length() > 0) {

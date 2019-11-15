@@ -4,7 +4,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = MybatisSmartProperties.MYBATIS_SMART_PREFIX)
 public class MybatisSmartProperties {
-	public static final String MYBATIS_SMART_PREFIX = "mybatis-smart";
+	 static final String MYBATIS_SMART_PREFIX = "mybatis-smart";
 
 	private String modelPackage;
 
