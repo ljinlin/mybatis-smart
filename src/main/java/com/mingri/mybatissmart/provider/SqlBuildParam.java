@@ -1,14 +1,18 @@
 package com.mingri.mybatissmart.provider;
 
+import java.sql.SQLException;
 import java.util.List;
 
 import org.apache.ibatis.binding.MapperMethod.ParamMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.mingri.mybatissmart.MybatisSmartContext;
 import com.mingri.mybatissmart.barracks.Constant;
 import com.mingri.mybatissmart.dbo.TableClass;
 
 public class SqlBuildParam {
+
 
 	private Class<?> clazz;
 	private Object param;
@@ -42,6 +46,8 @@ public class SqlBuildParam {
 	}
 
 	public static class Builder {
+		private static final Logger LOGGER = LoggerFactory.getLogger(Builder.class);
+		
 		private Object providerParam;
 		private Class<?> clazz;
 
@@ -59,8 +65,9 @@ public class SqlBuildParam {
 		 * 
 		 * @param providerParam
 		 * @return
+		 * @throws SQLException 
 		 */
-		private void construct(SqlBuildParam paramWrapper) {
+		private void construct(SqlBuildParam paramWrapper) throws SQLException {
 			Object param = null;
 			if (providerParam instanceof ParamMap) {
 				param = ((ParamMap<?>) providerParam).get(Constant.PARAM_KEY);
@@ -88,10 +95,15 @@ public class SqlBuildParam {
 			this.providerParam = providerParam;
 		}
 
-		public SqlBuildParam build() {
+		public SqlBuildParam build()  {
 			SqlBuildParam param = new SqlBuildParam();
-			construct(new SqlBuildParam());
-			return param;
+			try {
+				construct(new SqlBuildParam());
+				return param;
+			} catch (SQLException e) {
+				LOGGER.error("sql构建异常: {}", e);
+			}
+			return null;
 		}
 	}
 

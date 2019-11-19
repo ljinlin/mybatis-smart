@@ -1,5 +1,7 @@
 package com.mingri.mybatissmart.provider;
 
+import java.sql.SQLException;
+
 import org.apache.ibatis.annotations.Param;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,15 +25,21 @@ public class MapperSqlProvider {
 			sql = cmi.getSelectByWhereSql(paramWrapper.getParam(), cond);
 			LOGGER.info(sql);
 		} catch (Exception e) {
-			LOGGER.error("sql构建异常,打印日志:{}", e);
+			LOGGER.error("sql构建异常:{}", e);
 		}
 		return sql;
 	}
 	
 	public String selectById(Object idV, Class<?> cl) {
-		TableClass cmi = MybatisSmartContext.getClassMapperInfo(cl);
-		String sql = cmi.getSelectByIdSql(idV);
-		LOGGER.info(sql);
+		TableClass cmi;
+		String sql = null;
+		try {
+			cmi = MybatisSmartContext.getClassMapperInfo(cl);
+			 sql = cmi.getSelectByIdSql(idV);
+			LOGGER.info(sql);
+		} catch (SQLException e) {
+			LOGGER.error("sql构建异常:{}", e);
+		}
 		return sql;
 	}
 
@@ -43,7 +51,7 @@ public class MapperSqlProvider {
 			sql = cmi.getCountByWhereSql(paramWrapper.getParam(), cond);
 			LOGGER.info(sql);
 		} catch (Exception e) {
-			LOGGER.error("sql构建异常,打印日志:{}", e);
+			LOGGER.error("sql构建异常:{}", e);
 		}
 		return sql;
 	}
@@ -58,7 +66,7 @@ public class MapperSqlProvider {
 			sql = cmi.getDeleteByWhereSql(paramWrapper.getParam(), cond);
 			LOGGER.info(sql);
 		} catch (Exception e) {
-			LOGGER.error("sql构建异常,打印日志:{}", e);
+			LOGGER.error("sql构建异常:{}", e);
 		}
 		return sql;
 	}
@@ -72,7 +80,7 @@ public class MapperSqlProvider {
 			long edtime = System.currentTimeMillis();
 			LOGGER.info("构建SQL耗时:{},sql:{}", (edtime - sttime), sql);
 		} catch (Exception e) {
-			LOGGER.error("sql构建异常,打印日志:{}", e);
+			LOGGER.error("sql构建异常:{}", e);
 		}
 		return sql;
 	}
@@ -85,7 +93,7 @@ public class MapperSqlProvider {
 			sql = cmi.getUpdateByIdSql(paramWrapper.getParam());
 			LOGGER.info(sql);
 		} catch (Exception e) {
-			LOGGER.error("sql构建异常,打印日志:{}", e);
+			LOGGER.error("sql构建异常:{}", e);
 		}
 		return sql;
 	}
@@ -98,20 +106,21 @@ public class MapperSqlProvider {
 			sql = cmi.getUpdateByWhereSql(paramWrapper.getParam(), cond);
 			LOGGER.info(sql);
 		} catch (Exception e) {
-			LOGGER.error("sql构建异常,打印日志:{}", e);
+			LOGGER.error("sql构建异常:{}", e);
 		}
 		return sql;
 	}
 
 	public String deleteById(Object idV, Class<?> cl) {
 		SqlBuildParam paramWrapper=new SqlBuildParam.Builder(idV).setClazz(cl).build();
-		TableClass cmi = MybatisSmartContext.getClassMapperInfo(cl);
+		TableClass cmi;
 		String sql = null;
 		try {
+			 cmi = MybatisSmartContext.getClassMapperInfo(cl);
 			sql = cmi.getDeleteByIdSql(paramWrapper.getParam());
 			LOGGER.info(sql);
 		} catch (Exception e) {
-			LOGGER.error("sql构建异常,打印日志:{}", e);
+			LOGGER.error("sql构建异常: {}", e);
 		}
 		return sql;
 	}
