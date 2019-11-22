@@ -95,8 +95,8 @@ public class TableClass {
 		Field fi = null;
 
 		StringBuilder sql = new StringBuilder(SqlKwd.INSERT_INTO).append(tableInfo.value());
-		StringBuilder clSb = new StringBuilder(" (");
-		StringBuilder cvSb = new StringBuilder(" values(");
+		StringBuilder colmSql = new StringBuilder();
+		StringBuilder valusSql = new StringBuilder(" values(");
 
 		Collection<Object> objList = new ArrayList<>();
 		Integer i = null;
@@ -125,9 +125,9 @@ public class TableClass {
 						v = "'" + v + "'";
 					}
 					if (i == null || i == 0) {
-						clSb.append(en.getKey()).append(",");
+						colmSql.append(en.getKey()).append(",");
 					}
-					cvSb.append(v).append(",");
+					valusSql.append(v).append(",");
 					continue;
 				}
 				/*
@@ -141,50 +141,50 @@ public class TableClass {
 					 */
 					if (StrTool.isNotEmpty(v)) {
 						if (i == null || i == 0) {
-							clSb.append(en.getKey()).append(",");
+							colmSql.append(en.getKey()).append(",");
 						}
-						cvSb.append(v).append(",");
+						valusSql.append(v).append(",");
 					}else if(i!=null){//批量新增时
 						if(i==0) {
-							clSb.append(en.getKey()).append(",");
+							colmSql.append(en.getKey()).append(",");
 						}
-						cvSb.append("null").append(",");
+						valusSql.append("null").append(",");
 					}
 				} else {
 					List<ObjTypeEnum> otEs = Arrays.asList(ci.insertValType());
 
 					if (otEs.contains(ObjTypeEnum.ALL)) {
 						if (i == null || i == 0) {
-							clSb.append(en.getKey()).append(",");
+							colmSql.append(en.getKey()).append(",");
 						}
-						cvSb.append(adornIfEmpty(v)).append(",");
+						valusSql.append(adornIfEmpty(v)).append(",");
 						/*
 						 * 不插入空字符串和null值
 						 */
 					} else if (otEs.contains(ObjTypeEnum.OBJ)) {
 						if (StrTool.checkNotEmpty(v)) {
 							if (i == null || i == 0) {
-								clSb.append(en.getKey()).append(",");
+								colmSql.append(en.getKey()).append(",");
 							}
-							cvSb.append(v).append(",");
-						}else if(i!=null) {//批量新增时
+							valusSql.append(v).append(",");
+						}else if(i!=null) {//。批量新增时
 							if(i==0) {
-								clSb.append(en.getKey()).append(",");
+								colmSql.append(en.getKey()).append(",");
 							}
-							cvSb.append("null").append(",");
+							valusSql.append("null").append(",");
 						}
 					}
 				}
 
 			}
-			cvSb = cvSb.deleteCharAt(cvSb.length() - 1).append("),(");
+			valusSql = valusSql.deleteCharAt(valusSql.length() - 1).append("),(");
 			if (i != null) {
 				i++;
 			}
 		}
-		if (clSb.length() > 0) {
-			sql = sql.append(clSb.deleteCharAt(clSb.length() - 1).append(")"));
-			sql = sql.append(cvSb.delete(cvSb.length() - 2, cvSb.length()));
+		if (colmSql.length() > 0) {
+			sql = sql.append(" (").append(colmSql.deleteCharAt(colmSql.length() - 1).append(")"));
+			sql = sql.append(valusSql.delete(valusSql.length() - 2, valusSql.length()));
 			return sql.toString();
 		}
 		return null;
