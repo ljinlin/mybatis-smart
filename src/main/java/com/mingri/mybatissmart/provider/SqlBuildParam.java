@@ -98,7 +98,7 @@ public class SqlBuildParam {
 		public SqlBuildParam build()  {
 			SqlBuildParam param = new SqlBuildParam();
 			try {
-				construct(new SqlBuildParam());
+				construct(param);
 				return param;
 			} catch (SQLException e) {
 				LOGGER.error("sql构建异常: {}", e);

@@ -42,11 +42,11 @@ public class WhereSql {
 	}
 
 	public void setOrderByDesc(String orderByFieldName) {
-		this.orderBy = SqlKwd.ORDER_BY_SQL.concat(orderByFieldName).concat(Constant.SPACE + OrderChar.DESC.code);
+		this.orderBy = SqlKwd.ORDER_BY_SQL.concat(orderByFieldName).concat(Constant.SPACE + OrderChar.DESC);
 	}
 
 	public void setOrderByAsc(String orderByFieldName) {
-		this.orderBy = SqlKwd.ORDER_BY_SQL.concat(orderByFieldName).concat(Constant.SPACE + OrderChar.ASC.code);
+		this.orderBy = SqlKwd.ORDER_BY_SQL.concat(orderByFieldName).concat(Constant.SPACE + OrderChar.ASC);
 	}
 
 	public void setConds(List<WhereCond> conds) {

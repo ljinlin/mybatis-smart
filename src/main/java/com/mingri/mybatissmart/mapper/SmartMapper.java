@@ -18,7 +18,7 @@ public interface SmartMapper<E> extends BaseSmartMapper {
 	List<E> selectByWere(@Param(Constant.PARAM_KEY) Class<E> clazz, @Param(Constant.COND_KEY) WhereSql filterSqlBuild);
 
 	@SelectProvider(method = "select", type = MapperSqlProvider.class)
-	E selectOneByWere(@Param("clazz") Class<E> clazz, @Param(Constant.COND_KEY) WhereSql filterSqlBuild);
+	E selectOneByWere(@Param(Constant.PARAM_KEY) Class<E> clazz, @Param(Constant.COND_KEY) WhereSql filterSqlBuild);
 
 	@SelectProvider(method = "selectById", type = MapperSqlProvider.class)
 	E selectById(Object idV, Class<E> cl);

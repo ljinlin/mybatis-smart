@@ -117,7 +117,7 @@ public class MybatisSmartContext {
 	 * 
 	 * @param cl
 	 * @return
-	 * @throws SQLException 
+	 * @throws SQLException
 	 */
 	private static TableClass loadClassMapperInfo(Class<?> cl) throws SQLException {
 		TableClass clmif = MAPPERS_INFO.get(cl);
@@ -195,22 +195,21 @@ public class MybatisSmartContext {
 	 * 获取数据库方言
 	 * 
 	 * @return
-	 * @throws SQLException 
+	 * @throws SQLException
 	 */
 	private static DialectEnum getDialect() throws SQLException {
 		if (!MAPPERS_INFO.isEmpty()) {
 			return MAPPERS_INFO.entrySet().iterator().next().getValue().getDialect();
 		}
-		try(Connection conn=MybatisSmartContext.sessionFactory.openSession().getConnection()) {
+		try (Connection conn = MybatisSmartContext.sessionFactory.openSession().getConnection()) {
 			return Tool.getDialect(conn);
 		}
 	}
 
-
 	/**
 	 * 扫描数据模型
 	 */
-	public static void scanTableModel() throws ClassNotFoundException,SQLException {
+	public static void scanTableModel() throws ClassNotFoundException, SQLException {
 		String mdpkg = mybatisSmartProperties.getModelPackage();
 		LOGGER.info("==============================MybatisSmart开始扫描实体类,扫描的包{}", mdpkg);
 		if (StrTool.isNotEmpty(mdpkg)) {
@@ -222,17 +221,16 @@ public class MybatisSmartContext {
 				List<String> classList = FileTool.scanClass(packageName, true);
 				LOGGER.info("==============================MybatisSmart扫描到的类:{}", classList);
 				for (String classFileName : classList) {
-					if (FileTool.isClassFile(classFileName)) {
 						try {
-							Class<?> cl = classLoader.loadClass(FileTool.dirToPkg(classFileName).substring(0,
+							Class<?> cl = classLoader.loadClass(classFileName.substring(0,
 									classFileName.length() - FileSufx.CLAZZ.length()));
 							MybatisSmartContext.loadClassMapperInfo(cl);
-							LOGGER.info("MybatisSmart Scanned class: {} for modelPackage: {}", classFileName,packageName);
+							LOGGER.info("MybatisSmart Scanned class: {} for modelPackage: {}", classFileName,
+									packageName);
 						} catch (ClassNotFoundException | SQLException e) {
 							LOGGER.error("MybatisSmart 扫描modelPackage出错： {}", e);
 							throw e;
 						}
-					}
 				}
 
 			}
@@ -240,18 +238,26 @@ public class MybatisSmartContext {
 	}
 
 
-
-
-	public static Set<String> getColumns(Class<?> cl) throws SQLException {
-		TableClass res = getClassMapperInfo(cl);
+	public static Set<String> getColumns(Class<?> cl) {
+		TableClass res = null;
+		try {
+			res = getClassMapperInfo(cl);
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
 		if (res != null) {
 			return res.getFieldsMapperMap().keySet();
 		}
 		return Collections.emptySet();
 	}
 
-	public static String getTable(Class<?> cl) throws SQLException {
-		TableClass res = getClassMapperInfo(cl);
+	public static String getTable(Class<?> cl) {
+		TableClass res = null;
+		try {
+			res = getClassMapperInfo(cl);
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
 		if (res != null) {
 			return res.getTableInfo().value();
 		}

@@ -38,7 +38,7 @@ public interface BaseSmartMapper {
 			@Param(Constant.COND_KEY) WhereSql filterSqlBuild);
 
 	@DeleteProvider(method = "delete", type = MapperSqlProvider.class)
-	int deleteByWhere(@Param("clazz") Class<?> clazz,
+	int deleteByWhere(@Param(Constant.PARAM_KEY) Class<?> clazz,
 			@Param(Constant.COND_KEY) WhereSql filterSqlBuild);
 
 }
