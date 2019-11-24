@@ -13,6 +13,8 @@ public interface SqlKwd {
 	static final String FROM = " from ";
 	static final String INSERT_INTO = " insert into ";
 	static final String SELECT = " select ";
+	static final String UPDATE = " update ";
 	static final String DELETE = " delete ";
+	static final String SET = " set ";
 	static final String AS = " as ";
 }
