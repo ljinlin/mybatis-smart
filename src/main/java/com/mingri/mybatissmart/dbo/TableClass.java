@@ -10,6 +10,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.ibatis.jdbc.SQL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,6 +21,7 @@ import com.mingri.langhuan.cabinet.constant.NexusCmp;
 import com.mingri.langhuan.cabinet.constant.ObjTypeEnum;
 import com.mingri.langhuan.cabinet.constant.ValTypeEnum;
 import com.mingri.langhuan.cabinet.tool.ClassTool;
+import com.mingri.langhuan.cabinet.tool.CollectionTool;
 import com.mingri.langhuan.cabinet.tool.StrTool;
 import com.mingri.mybatissmart.MybatisSmartException;
 import com.mingri.mybatissmart.annotation.ColumnInfo;
@@ -128,6 +130,7 @@ public class TableClass {
 		}
 	}
 
+
 	@SuppressWarnings("unchecked")
 	public String getInsertSql(Object obj) throws Exception {
 
@@ -215,7 +218,6 @@ public class TableClass {
 	public String getUpdateByIdSql(Object obj) throws Exception {
 		idField.setAccessible(true);
 		WhereSql filterSqlBuild = new WhereSql().andEq(idColumnName, idField.get(obj));
-
 		return getUpdateByWhereSql(obj, filterSqlBuild);
 	}
 
@@ -278,55 +280,59 @@ public class TableClass {
 	}
 
 	private String buildWhere(Object obj, List<WhereCond> conds) {
+		if (conds.isEmpty()) {
+			return null;
+		}
 		final StringBuilder where = new StringBuilder();
-		if (!conds.isEmpty()) {
-			int index = 0;
-			for (WhereCond cond : conds) {
-				List<WhereCond> childConds = cond.getChildCond();
-				if (childConds != null && !childConds.isEmpty()) {
-					String childWhere = this.buildWhere(obj, childConds);
-					if (childWhere.length() > 0) {
-						where.append(cond.getLogicCmp().code).append(" ( ").append(childWhere).append(" ) ");
-					}
-				}
-				String columnName = cond.getColumnName();
-				Object srcVal = cond.getVal();
-				NexusCmp cexusCmp = cond.getNexusCmp();
-				ColumnField fim = this.fieldsMapperMap.get(columnName);
-				String val = null;
-				if (srcVal == null && fim != null) {
-					try {
-						if (!(obj instanceof Class)) {
-							val = TableClass.buildWhereValSql(obj, fim, cexusCmp, null);
-						}
-					} catch (Exception exc) {
-						LOGGER.error("捕获到异常,打印日志：{}", exc);
-					}
-				} else if (srcVal != null) {
-					if (cond.isSqlVal()) {
-						val = cexusCmp.code.concat(Constant.SPACE).concat(srcVal.toString());
-					} else {
-						val = buildCmpVal(srcVal, null, cexusCmp, null);
-					}
-				}
-				if (val != null) {
-					if (index > 0) {
-						where.append(cond.getLogicCmp().code);
-					}
-					where.append(Constant.SPACE).append(columnName).append(Constant.SPACE).append(val)
-							.append(Constant.SPACE);
-					index++;
+		int index = 0;
+		for (WhereCond cond : conds) {
+			List<WhereCond> childConds = cond.getChildCond();
+			if (CollectionTool.notEmpty(childConds)) {
+				String childWhere = this.buildWhere(obj, childConds);
+				if (StrTool.isNotEmpty(childWhere)) {
+					where.append(cond.getLogicCmp().code).append(" ( ").append(childWhere).append(" ) ");
 				}
 			}
-
+			String columnName = cond.getColumnName();
+			Object srcVal = cond.getVal();
+			NexusCmp cexusCmp = cond.getNexusCmp();
+			ColumnField fim = this.fieldsMapperMap.get(columnName);
+			String val = null;
+			if (srcVal == null && fim != null) {
+				try {
+					if (!(obj instanceof Class)) {
+						val = TableClass.buildWhereValSql(obj, fim, cexusCmp);
+					}
+				} catch (Exception exc) {
+					LOGGER.error("捕获到异常,打印日志：{}", exc);
+				}
+			} else if (srcVal != null) {
+				if (cond.isSqlVal()) {
+					val = cexusCmp.code.concat(Constant.SPACE).concat(srcVal.toString());
+				} else {
+					val = buildCmpVal(srcVal, null, cexusCmp, null);
+				}
+			}
+			if (val != null) {
+				if (index > 0) {
+					where.append(cond.getLogicCmp().code);
+				}
+				where.append(Constant.SPACE).append(columnName).append(Constant.SPACE).append(val)
+						.append(Constant.SPACE);
+				index++;
+			}
 		}
+
 		return where.toString();
 	}
 
 	private String buildWhere(Object obj, WhereSql filterSqlBuild) {
 		StringBuilder where = new StringBuilder();
 		if (obj != null && filterSqlBuild != null) {
-			where.append(this.buildWhere(obj, filterSqlBuild.getConds()));
+			String whereCondsSql = this.buildWhere(obj, filterSqlBuild.getConds());
+			if (StrTool.isNotEmpty(whereCondsSql)) {
+				where.append(whereCondsSql);
+			}
 		}
 		String nativeSqlConds = null;
 		if (filterSqlBuild != null) {
@@ -355,8 +361,8 @@ public class TableClass {
 
 		String orderBy = filterSqlBuild == null ? StrTool.EMPTY : filterSqlBuild.getOrderBy();
 		StringBuilder sql = new StringBuilder(SqlKwd.SELECT).append(this.getColumns()).append(SqlKwd.FROM)
-				.append(tableInfo.value());
-		sql.append(where);
+				.append(tableInfo.value()).append(where);
+
 		if (StrTool.checkNotEmpty(orderBy)) {
 			sql.append(orderBy);
 		}
@@ -380,16 +386,14 @@ public class TableClass {
 
 	public String getCountByWhereSql(Object obj, WhereSql filterSqlBuild) {
 		String where = buildWhere(obj, filterSqlBuild);
-		StringBuilder sql = new StringBuilder(" select count(*) from ").append(tableInfo.value()).append(where);
-		return sql.toString();
+		return new StringBuilder(" select count(*) from ").append(tableInfo.value()).append(where).toString();
 	}
 
 	public String getDeleteByWhereSql(Object obj, WhereSql filterSqlBuild) {
 		String where = buildWhere(obj, filterSqlBuild);
 		if (StrTool.checkNotEmpty(where)) {
-			StringBuilder sql = new StringBuilder(SqlKwd.DELETE).append(SqlKwd.FROM).append(tableInfo.value())
-					.append(where);
-			return sql.toString();
+			return new StringBuilder(SqlKwd.DELETE).append(SqlKwd.FROM).append(tableInfo.value()).append(where)
+					.toString();
 		}
 		return null;
 	}
@@ -398,13 +402,11 @@ public class TableClass {
 		if (StrTool.checkEmpty(idV)) {
 			throw new MybatisSmartException("条件字段" + tableInfo.idFieldName() + "的值不能为null");
 		}
-		StringBuilder sql = new StringBuilder(SqlKwd.DELETE).append(SqlKwd.FROM).append(tableInfo.value())
-				.append(SqlKwd.WHERE_PRE).append(idColumnName).append("='" + idV + "'");
-		return sql.toString();
+		return new StringBuilder(SqlKwd.DELETE).append(SqlKwd.FROM).append(tableInfo.value()).append(SqlKwd.WHERE_PRE)
+				.append(idColumnName).append("='" + idV + "'").toString();
 	}
 
 	private static String adornIfEmpty(String val) {
-
 		return val == null ? ValTypeEnum.NULL.code : (val.trim().length() == 0 ? "'" + val + "'" : val);
 	}
 
@@ -447,16 +449,16 @@ public class TableClass {
 	 * @throws IllegalArgumentException
 	 * @throws IllegalAccessException
 	 */
-	private static String buildWhereValSql(Object srcObj, ColumnField fmi, NexusCmp cexusCmp, Integer index)
+	private static String buildWhereValSql(Object srcObj, ColumnField fmi, NexusCmp cexusCmp)
 			throws IllegalArgumentException, IllegalAccessException {
 		Object srcVal = ClassTool.reflexVal(srcObj, fmi.getField());
 		if (srcVal == null) {
 			return null;
 		}
 		if (cexusCmp != null) {
-			return buildCmpVal(srcVal, fmi, cexusCmp, index);
+			return buildCmpVal(srcVal, fmi, cexusCmp, null);
 		}
-		return buildColumnVal(srcVal, fmi, index);
+		return buildColumnVal(srcVal, fmi, null);
 	}
 
 	/**
@@ -560,14 +562,5 @@ public class TableClass {
 		}
 		return clsStr;
 	}
-
-	// @SuppressWarnings("unchecked")
-	// public static <E> List<E> arrayToList(Object[] ary, Class<E> E) {
-	// List<E> list = new ArrayList<E>();
-	// for (Object e : ary) {
-	// list.add((E) e);
-	// }
-	// return list;
-	// }
 
 }
