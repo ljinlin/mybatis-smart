@@ -5,7 +5,7 @@
 	<groupId>com.github.ljinlin</groupId>
 	<artifactId>mybatis-smart</artifactId>
 	<version>1.0.0-beta1</version>
-
+	
 	<licenses>
 		<license>
 			<name>The Apache Software License, Version 2.0</name>

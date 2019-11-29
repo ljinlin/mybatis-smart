@@ -7,7 +7,7 @@ package com.mingri.mybatissmart.barracks;
  */
 public interface SqlKwd {
 	static final String WHERE_PRE = " where ";
-	static final String ORDER_BY_SQL = " order by ";
+	static final String ORDER_BY = " order by ";
 	static final String LIMIT = " limit ";
 	static final String OFFSET = " offset ";
 	static final String FROM = " from ";

@@ -7,84 +7,111 @@ import com.mingri.langhuan.cabinet.constant.NexusCmp;
 
 /**
  * where 条件 节点
+ * 
  * @author ljl
  *
  */
-public class WhereCond {
+public class WhereNode {
 
+	/**
+	 * 关系运算符：> < = ...
+	 */
 	private NexusCmp nexusCmp;
+
+	/**
+	 * 逻辑运算符 ：and or
+	 */
 	private LogicCmp logicCmp;
+
+	/**
+	 * 列名称
+	 */
 	private String columnName;
-	private String valName;
+
+	/**
+	 * 值
+	 */
 	private Object val;
-	private boolean isSqlVal=false;
-	
-	private List<WhereCond> childCond;
-	
-	public WhereCond(LogicCmp logicCmp,String columnName,NexusCmp nexusCmp, Object val) {
+
+	/**
+	 * 是否Statement值
+	 */
+	private boolean isStatementVal = false;
+
+	private List<WhereNode> childCond;
+
+	public WhereNode(LogicCmp logicCmp, String columnName, NexusCmp nexusCmp, Object val) {
 		this.logicCmp = logicCmp;
 		this.nexusCmp = nexusCmp;
 		this.columnName = columnName;
 		this.val = val;
 	}
-	public WhereCond(LogicCmp logicCmp,String columnName,NexusCmp nexusCmp, Object val,boolean isSqlVal) {
+
+	public WhereNode(LogicCmp logicCmp, String columnName, NexusCmp nexusCmp, Object val, boolean isStatementVal) {
 		this.logicCmp = logicCmp;
 		this.nexusCmp = nexusCmp;
 		this.columnName = columnName;
 		this.val = val;
-		this.isSqlVal = isSqlVal;
+		this.isStatementVal = isStatementVal;
 	}
-	public WhereCond(LogicCmp logicCmp,String columnName,NexusCmp nexusCmp) {
+
+	public WhereNode(LogicCmp logicCmp, String columnName, NexusCmp nexusCmp) {
 		this.logicCmp = logicCmp;
 		this.nexusCmp = nexusCmp;
 		this.columnName = columnName;
 	}
-	public WhereCond(LogicCmp logicCmp,List<WhereCond> childCond) {
+
+	public WhereNode(LogicCmp logicCmp, List<WhereNode> childCond) {
 		this.logicCmp = logicCmp;
 		this.childCond = childCond;
 	}
+
 	public NexusCmp getNexusCmp() {
 		return nexusCmp;
 	}
+
 	public void setNexusCmp(NexusCmp nexusCmp) {
 		this.nexusCmp = nexusCmp;
 	}
+
 	public String getColumnName() {
 		return columnName;
 	}
+
 	public void setColumnName(String columnName) {
 		this.columnName = columnName;
 	}
-	public String getValName() {
-		return valName;
-	}
-	public void setValName(String valName) {
-		this.valName = valName;
-	}
+
 	public Object getVal() {
 		return val;
 	}
+
 	public void setVal(Object val) {
 		this.val = val;
 	}
+
 	public LogicCmp getLogicCmp() {
 		return logicCmp;
 	}
+
 	public void setLogicCmp(LogicCmp logicCmp) {
 		this.logicCmp = logicCmp;
 	}
-	public boolean isSqlVal() {
-		return isSqlVal;
+
+	public boolean isStatementVal() {
+		return isStatementVal;
 	}
-	public void setSqlVal(boolean isSqlVal) {
-		this.isSqlVal = isSqlVal;
+
+	public void setStatementVal(boolean isStatementVal) {
+		this.isStatementVal = isStatementVal;
 	}
-	public List<WhereCond> getChildCond() {
+
+	public List<WhereNode> getChildCond() {
 		return childCond;
 	}
-	public void setChildCond(List<WhereCond> childCond) {
+
+	public void setChildCond(List<WhereNode> childCond) {
 		this.childCond = childCond;
 	}
 
-	
 }

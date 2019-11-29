@@ -10,6 +10,6 @@ public interface Constant {
 	/**
 	 *  Mapper where参数名称
 	 */
-	static final String COND_KEY = "ck";
+	static final String COND_KEY = "condk";
 	public static final String SPACE = " ";
 }
