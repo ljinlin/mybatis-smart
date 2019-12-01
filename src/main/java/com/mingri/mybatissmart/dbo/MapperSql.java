@@ -7,11 +7,11 @@ import com.mingri.mybatissmart.barracks.Constant;
 import com.mingri.mybatissmart.barracks.DialectEnum;
 import com.mingri.mybatissmart.barracks.SqlKwd;
 
- class SQL {
+ class MapperSql {
 
-	private StringBuilder sqlStatement = new StringBuilder();
+	private StringBuilder statementSql = new StringBuilder();
 
-	private SQL() {
+	private MapperSql() {
 	}
 
 	 class Select {
@@ -23,7 +23,7 @@ import com.mingri.mybatissmart.barracks.SqlKwd;
 		private DialectEnum dialect;
 
 		Select(String columns, String table) {
-			sqlStatement = new StringBuilder(SqlKwd.SELECT).append(columns).append(SqlKwd.FROM).append(table);
+			statementSql = new StringBuilder(SqlKwd.SELECT).append(columns).append(SqlKwd.FROM).append(table);
 		}
 
 		Select where(WhereSql where) {
@@ -43,12 +43,12 @@ import com.mingri.mybatissmart.barracks.SqlKwd;
 			return this;
 		}
 
-		SQL build() {
+		MapperSql build() {
 			if (where != null) {
-				sqlStatement.append(where.build());
+				statementSql.append(where.build());
 			}
 			if (StrTool.checkNotEmpty(orderBy)) {
-				sqlStatement.append(orderBy);
+				statementSql.append(orderBy);
 			}
 
 			if (dialect != null) {
@@ -56,16 +56,16 @@ import com.mingri.mybatissmart.barracks.SqlKwd;
 				switch (dialect) {
 				case MYSQL:
 					if (limit != null) {
-						sqlStatement.append(SqlKwd.LIMIT).append(limit);
+						statementSql.append(SqlKwd.LIMIT).append(limit);
 						if (offset != null) {
-							sqlStatement.append(SqlKwd.OFFSET).append(offset);
+							statementSql.append(SqlKwd.OFFSET).append(offset);
 
 						}
 					}
 					break;
 				case SQLSERVER:
 					if (limit != null && offset != null) {
-						sqlStatement.append(SqlKwd.OFFSET).append(offset).append(" rows fetch next ").append(limit)
+						statementSql.append(SqlKwd.OFFSET).append(offset).append(" rows fetch next ").append(limit)
 								.append(" rows only ");
 					}
 					break;
@@ -74,7 +74,7 @@ import com.mingri.mybatissmart.barracks.SqlKwd;
 				}
 			}
 
-			return SQL.this;
+			return MapperSql.this;
 		}
 	}
 
@@ -86,7 +86,7 @@ import com.mingri.mybatissmart.barracks.SqlKwd;
 		Insert(String table) {
 			intoColumns = new StringBuilder();
 			intoValues = new StringBuilder();
-			sqlStatement.append(SqlKwd.INSERT_INTO).append(table);
+			statementSql.append(SqlKwd.INSERT_INTO).append(table);
 		}
 
 		Insert intoColumn(String column) {
@@ -111,14 +111,14 @@ import com.mingri.mybatissmart.barracks.SqlKwd;
 			return this;
 		}
 
-		SQL build() {
+		MapperSql build() {
 			if (StrTool.isEmpty(intoColumns)) {
-				return SQL.this;
+				return MapperSql.this;
 			}
-			sqlStatement.append(" (").append(intoColumns.deleteCharAt(intoColumns.length() - 1).append(")"));
+			statementSql.append(" (").append(intoColumns.deleteCharAt(intoColumns.length() - 1).append(")"));
 			intoValues.insert(0, " values(");
-			sqlStatement.append(intoValues.delete(intoValues.length() - 2, intoValues.length()));
-			return SQL.this;
+			statementSql.append(intoValues.delete(intoValues.length() - 2, intoValues.length()));
+			return MapperSql.this;
 		}
 
 	}
@@ -128,7 +128,7 @@ import com.mingri.mybatissmart.barracks.SqlKwd;
 		private WhereSql where = null;
 
 		Delete(String table) {
-			sqlStatement = new StringBuilder(SqlKwd.DELETE).append(SqlKwd.FROM).append(table);
+			statementSql = new StringBuilder(SqlKwd.DELETE).append(SqlKwd.FROM).append(table);
 		}
 
 		Delete setWhere(WhereSql where) {
@@ -136,11 +136,11 @@ import com.mingri.mybatissmart.barracks.SqlKwd;
 			return this;
 		}
 
-		SQL build() {
+		MapperSql build() {
 			if (where != null) {
-				sqlStatement.append(where.build());
+				statementSql.append(where.build());
 			}
-			return SQL.this;
+			return MapperSql.this;
 		}
 	}
 
@@ -150,7 +150,7 @@ import com.mingri.mybatissmart.barracks.SqlKwd;
 		private WhereSql where = null;
 
 		Update(String table) {
-			sqlStatement.append(SqlKwd.UPDATE).append(table).append(SqlKwd.SET);
+			statementSql.append(SqlKwd.UPDATE).append(table).append(SqlKwd.SET);
 		}
 
 		Update set(String column, String value) {
@@ -163,12 +163,12 @@ import com.mingri.mybatissmart.barracks.SqlKwd;
 			return this;
 		}
 
-		SQL build() {
-			sqlStatement.append(sets.substring(0, sets.length() - 1));
+		MapperSql build() {
+			statementSql.append(sets.substring(0, sets.length() - 1));
 			if (where != null) {
-				sqlStatement.append(where.build());
+				statementSql.append(where.build());
 			}
-			return SQL.this;
+			return MapperSql.this;
 		}
 	}
 
@@ -230,28 +230,28 @@ import com.mingri.mybatissmart.barracks.SqlKwd;
 	}
 
 	static Insert insertInto(String table) {
-		return new SQL().new Insert(table);
+		return new MapperSql().new Insert(table);
 	}
 
 	static Delete delete(String table) {
-		return new SQL().new Delete(table);
+		return new MapperSql().new Delete(table);
 	}
 
 	static Update update(String table) {
-		return new SQL().new Update(table);
+		return new MapperSql().new Update(table);
 	}
 
 	static Select select(String columns, String table) {
-		return new SQL().new Select(columns, table);
+		return new MapperSql().new Select(columns, table);
 	}
 
 	static WhereSql where() {
-		return new SQL().new WhereSql();
+		return new MapperSql().new WhereSql();
 	}
 
 	@Override
 	public String toString() {
-		return sqlStatement.toString();
+		return statementSql.toString();
 	}
 
 }

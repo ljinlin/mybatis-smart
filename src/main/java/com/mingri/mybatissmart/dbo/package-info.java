@@ -1,7 +1,7 @@
 /**
- * 类似数据库对象的信息
- * 
- * @author vn0wr5w
+ * 数据库相关：
+ * 		表映射类、列和字段映射类、sql类相关
+ * @author ljl
  *
  */
 package com.mingri.mybatissmart.dbo;

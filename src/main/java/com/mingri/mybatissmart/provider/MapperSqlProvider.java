@@ -11,6 +11,11 @@ import com.mingri.mybatissmart.barracks.Constant;
 import com.mingri.mybatissmart.dbo.TableClass;
 import com.mingri.mybatissmart.dbo.Where;
 
+/**
+ * mapper sql 提供者
+ * @author ljl
+ * 2019年11月30日
+ */
 public class MapperSqlProvider {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MapperSqlProvider.class);

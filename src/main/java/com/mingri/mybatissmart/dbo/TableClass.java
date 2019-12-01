@@ -19,7 +19,7 @@ import com.mingri.mybatissmart.MybatisSmartException;
 import com.mingri.mybatissmart.annotation.ColumnInfo;
 import com.mingri.mybatissmart.annotation.TableInfo;
 import com.mingri.mybatissmart.barracks.DialectEnum;
-import com.mingri.mybatissmart.dbo.SQL.WhereSql;
+import com.mingri.mybatissmart.dbo.MapperSql.WhereSql;
 
 public class TableClass {
 
@@ -82,7 +82,7 @@ public class TableClass {
 
 	@SuppressWarnings("unchecked")
 	public String getInsertSql(Object obj) throws Exception {
-		SQL.Insert insert = SQL.insertInto(tableInfo.value());
+		MapperSql.Insert insert = MapperSql.insertInto(tableInfo.value());
 
 		Collection<Object> dataList = obj instanceof Collection ? dataList = (Collection<Object>) obj
 				: Collections.singletonList(obj);
@@ -103,7 +103,7 @@ public class TableClass {
 				/*
 				 * id处理
 				 */
-				colmVal = StatementTool.generateIdIfIdFieldAndDftIdtactic(field, rowObj, tableInfo);
+				colmVal = MapperSqlTool.generateIdIfIdFieldAndDftIdtactic(field, rowObj, tableInfo);
 				if (colmVal != null) {
 					insert.intoColumn(colmName, index);
 					insert.intoValue("'" + colmVal + "'");
@@ -115,7 +115,7 @@ public class TableClass {
 				/*
 				 * 没配置insertValType
 				 */
-				colmVal = StatementTool.buildColumnVal(srcVal, en.getValue(), index);
+				colmVal = MapperSqlTool.buildColumnVal(srcVal, en.getValue(), index);
 				if (columnInfo == null || columnInfo.insertValType().length == 0) {
 					/*
 					 * 不插入空字符串和null值、"null"、" "
@@ -132,7 +132,7 @@ public class TableClass {
 
 					if (otEs.contains(ObjTypeEnum.ALL)) {
 						insert.intoColumn(colmName, index);
-						insert.intoValue(StatementTool.toSqlEmptyIfStringEmpty(colmVal));
+						insert.intoValue(MapperSqlTool.toSqlEmptyIfStringEmpty(colmVal));
 
 						/*
 						 * 不插入空字符串和null值
@@ -166,11 +166,11 @@ public class TableClass {
 		ColumnInfo columnInfo = null;
 		String colmVal = null;
 		Field field = null;
-		WhereSql whereSql = StatementTool.buildWhere(obj, where, this);
+		WhereSql whereSql = MapperSqlTool.buildWhere(obj, where, this);
 		if (whereSql == null || whereSql.isEmpty()) {
 			throw new MybatisSmartException("必须设置where条件");
 		}
-		SQL.Update updateSql = SQL.update(tableInfo.value());
+		MapperSql.Update updateSql = MapperSql.update(tableInfo.value());
 		String column = null;
 		for (Map.Entry<String, ColumnField> en : fieldsMapperMap.entrySet()) {
 			field = en.getValue().getField();
@@ -183,7 +183,7 @@ public class TableClass {
 			}
 			column = en.getKey();
 			Object srcVal = ClassTool.reflexVal(obj, field);
-			colmVal = StatementTool.buildColumnVal(srcVal, en.getValue(), null);
+			colmVal = MapperSqlTool.buildColumnVal(srcVal, en.getValue(), null);
 			if (columnInfo == null || columnInfo.updateValType().length == 0) {
 				if (StrTool.checkNotEmpty(srcVal)) {
 					updateSql.set(column, colmVal);
@@ -191,7 +191,7 @@ public class TableClass {
 			} else {
 				List<ObjTypeEnum> otEs = Arrays.asList(columnInfo.updateValType());
 				if (otEs.contains(ObjTypeEnum.ALL)) {
-					updateSql.set(column, StatementTool.toSqlEmptyIfStringEmpty(colmVal));
+					updateSql.set(column, MapperSqlTool.toSqlEmptyIfStringEmpty(colmVal));
 				} else if (otEs.contains(ObjTypeEnum.OBJ)) {
 					if (StrTool.checkNotEmpty(srcVal)) {
 						updateSql.set(column, colmVal);
@@ -203,29 +203,29 @@ public class TableClass {
 	}
 
 	public String getSelectByIdSql(Object idV) {
-		SQL sql = SQL.select(StatementTool.getColumns(this), tableInfo.value())
-				.where(SQL.where().add( " " + idColumnName + "='" + idV + "'")).build();
+		MapperSql sql = MapperSql.select(MapperSqlTool.getColumns(this), tableInfo.value())
+				.where(MapperSql.where().add( " " + idColumnName + "='" + idV + "'")).build();
 		return sql.toString();
 	}
 
 	public String getSelectByWhereSql(Object obj, Where where) throws IllegalArgumentException, IllegalAccessException {
-		WhereSql whereSql = StatementTool.buildWhere(obj, where, this);
-		return SQL.select(StatementTool.getColumns(this), tableInfo.value()).where(whereSql).orderBy(where.getOrderBy())
+		WhereSql whereSql = MapperSqlTool.buildWhere(obj, where, this);
+		return MapperSql.select(MapperSqlTool.getColumns(this), tableInfo.value()).where(whereSql).orderBy(where.getOrderBy())
 				.limit(where.getLimit(), where.getOffset(), dialect).build().toString();
 	}
 
 	public String getCountByWhereSql(Object obj, Where where) throws IllegalArgumentException, IllegalAccessException {
-		WhereSql whereSql = StatementTool.buildWhere(obj, where, this);
-		SQL sql = SQL.select(" count(*) ", tableInfo.value()).where(whereSql).build();
+		WhereSql whereSql = MapperSqlTool.buildWhere(obj, where, this);
+		MapperSql sql = MapperSql.select(" count(*) ", tableInfo.value()).where(whereSql).build();
 		return sql.toString();
 	}
 
 	public String getDeleteByWhereSql(Object obj, Where where) throws IllegalArgumentException, IllegalAccessException {
-		WhereSql whereSql = StatementTool.buildWhere(obj, where, this);
-		return SQL.delete(tableInfo.value()).setWhere(whereSql).build().toString();
+		WhereSql whereSql = MapperSqlTool.buildWhere(obj, where, this);
+		return MapperSql.delete(tableInfo.value()).setWhere(whereSql).build().toString();
 	}
 
 	public String getDeleteByIdSql(Object idV) {
-		return SQL.delete(tableInfo.value()).setWhere(SQL.where().add( " " + idColumnName + "='" + idV + "'")).build().toString();
+		return MapperSql.delete(tableInfo.value()).setWhere(MapperSql.where().add( " " + idColumnName + "='" + idV + "'")).build().toString();
 	}
 }

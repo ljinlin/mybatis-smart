@@ -11,6 +11,11 @@ import com.mingri.mybatissmart.MybatisSmartContext;
 import com.mingri.mybatissmart.barracks.Constant;
 import com.mingri.mybatissmart.dbo.TableClass;
 
+/**
+ *  mapper sql构建所需要的参数类
+ * @author ljl
+ * 2019年11月30日
+ */
 public class SqlBuildParam {
 
 

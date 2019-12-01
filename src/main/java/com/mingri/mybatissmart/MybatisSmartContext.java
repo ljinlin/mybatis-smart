@@ -2,23 +2,15 @@ package com.mingri.mybatissmart;
 
 import static org.springframework.util.StringUtils.tokenizeToStringArray;
 
-import java.io.IOException;
 import java.lang.reflect.Field;
-import java.net.JarURLConnection;
-import java.net.URL;
-import java.net.URLDecoder;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
@@ -39,6 +31,11 @@ import com.mingri.mybatissmart.dbo.ColumnField;
 import com.mingri.mybatissmart.dbo.TableClass;
 import com.mingri.mybatissmart.mapper.InternalMapper;
 
+/**
+ * mybatis-smart 上下文
+ * @author ljl
+ * 2019年11月30日
+ */
 public class MybatisSmartContext {
 
 	private MybatisSmartContext() {
@@ -47,6 +44,9 @@ public class MybatisSmartContext {
 	private static SqlSessionFactory sessionFactory;
 	private static MybatisSmartProperties mybatisSmartProperties;
 
+	/**
+	 *  表类映射信息
+	 */
 	private static final Map<Class<?>, TableClass> MAPPERS_INFO = new HashMap<>();
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MybatisSmartContext.class);

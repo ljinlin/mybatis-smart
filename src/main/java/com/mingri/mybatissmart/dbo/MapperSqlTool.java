@@ -21,9 +21,9 @@ import com.mingri.mybatissmart.annotation.TableInfo;
 import com.mingri.mybatissmart.barracks.Constant;
 import com.mingri.mybatissmart.barracks.IdtacticsEnum;
 import com.mingri.mybatissmart.barracks.SqlKwd;
-import com.mingri.mybatissmart.dbo.SQL.WhereSql;
+import com.mingri.mybatissmart.dbo.MapperSql.WhereSql;
 
-class StatementTool {
+class MapperSqlTool {
 
 	static WhereSql buildWhere(Object obj, Where where, TableClass tableClass)
 			throws IllegalArgumentException, IllegalAccessException {
@@ -33,9 +33,9 @@ class StatementTool {
 			return null;
 		}
 
-		SQL.WhereSql whereSql = SQL.where();
+		MapperSql.WhereSql whereSql = MapperSql.where();
 		if (obj != null) {
-			StatementTool.buildWhere(obj, nodes, tableClass, whereSql);
+			MapperSqlTool.buildWhere(obj, nodes, tableClass, whereSql);
 		}
 
 		String afterConditionSql = where.getAfterConditionSql();
@@ -55,7 +55,7 @@ class StatementTool {
 			List<WhereNode> childConds = cond.getChildCond();
 			LogicCmp logicCmp = cond.getLogicCmp();
 			if (CollectionTool.notEmpty(childConds)) {
-				WhereSql childWhere = StatementTool.buildWhere(obj, childConds, tableClass, SQL.where());
+				WhereSql childWhere = MapperSqlTool.buildWhere(obj, childConds, tableClass, MapperSql.where());
 				whereSql.add(logicCmp, childWhere);
 			}
 			String columnName = cond.getColumnName();
@@ -68,12 +68,12 @@ class StatementTool {
 				if (cond.isStatementVal()) {
 					columnVal = condSrcVal.toString();
 				} else {
-					columnVal = StatementTool.buildWhereNode(nexusCmp, null, condSrcVal);
+					columnVal = MapperSqlTool.buildWhereNode(nexusCmp, null, condSrcVal);
 				}
 			} else if (fim != null) {
 				if (!(obj instanceof Class)) {
 					Object objSrcVal = ClassTool.reflexVal(obj, fim.getField());
-					columnVal = StatementTool.buildWhereNode(nexusCmp, fim, objSrcVal);
+					columnVal = MapperSqlTool.buildWhereNode(nexusCmp, fim, objSrcVal);
 				}
 			}
 			if (columnVal != null) {
@@ -100,9 +100,9 @@ class StatementTool {
 		if ((cexusCmp == NexusCmp.IN || cexusCmp == NexusCmp.NOT_IN) && srcVal instanceof String) {
 			columnVal = srcVal.toString();
 		} else if (fmi != null) {// 。对象传值
-			columnVal = StatementTool.buildColumnVal(srcVal, fmi, null);
+			columnVal = MapperSqlTool.buildColumnVal(srcVal, fmi, null);
 		} else {// 。直接传值
-			columnVal = StatementTool.buildColumnValOfWhereNodeVal(srcVal);
+			columnVal = MapperSqlTool.buildColumnValOfWhereNodeVal(srcVal);
 		}
 		if (columnVal == null) {
 			return null;
@@ -223,7 +223,7 @@ class StatementTool {
 			}
 		}
 		if (fieldType == String.class || srcVal instanceof Date || srcVal instanceof TemporalAccessor) {
-			columnVal = StatementTool.toBatisVal(srcVal, fi.getName(), index);
+			columnVal = MapperSqlTool.toBatisVal(srcVal, fi.getName(), index);
 		} else {
 			columnVal = srcVal.toString();
 		}
@@ -252,7 +252,7 @@ class StatementTool {
 		String idVal = null;
 		if (field.getName().equals(tableInfo.idFieldName()) && tableInfo.idtactics() == IdtacticsEnum.DFT) {
 			idVal = SequenceGenerate.nexId(tableInfo.value());
-			StatementTool.injectIdVal(field, rowObj, idVal);
+			MapperSqlTool.injectIdVal(field, rowObj, idVal);
 		}
 		return idVal;
 	}
