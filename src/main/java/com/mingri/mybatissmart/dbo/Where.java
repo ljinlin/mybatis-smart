@@ -7,14 +7,16 @@ import com.mingri.langhuan.cabinet.constant.LogicCmp;
 import com.mingri.langhuan.cabinet.constant.NexusCmp;
 import com.mingri.langhuan.cabinet.constant.OrderChar;
 import com.mingri.langhuan.cabinet.constant.ValTypeEnum;
+import com.mingri.langhuan.cabinet.tool.CollectionTool;
 import com.mingri.langhuan.cabinet.tool.StrTool;
 import com.mingri.mybatissmart.barracks.Constant;
 import com.mingri.mybatissmart.barracks.SqlKwd;
+import com.sun.istack.NotNull;
 
 /**
- * 模仿sql的where语句
+ * 模仿sql的where语句<br>
  * 
- * @author vn0wr5w
+ * @author ljl
  *
  */
 public class Where {
@@ -22,7 +24,6 @@ public class Where {
 	private String orderBy = StrTool.EMPTY;
 	private Integer offset;
 	private Integer limit;
-	
 	private List<WhereNode> nodes = new ArrayList<>();
 
 	private String afterConditionSql;
@@ -35,21 +36,77 @@ public class Where {
 		return offset;
 	}
 
+	public String getOrderBy() {
+		return orderBy;
+	}
+
+	public Where() {
+	}
+
+	/**
+	 * and columnName nexusCmp
+	 * 
+	 * @param columnName 列名称
+	 * @param nexusCmp   关系运算符
+	 */
+	public Where(String columnName, NexusCmp nexusCmp) {
+		nodes.add(new WhereNode(LogicCmp.AND, columnName, nexusCmp));
+	}
+
+	/**
+	 * and columnName nexusCmp val
+	 * 
+	 * @param columnName 列名称
+	 * @param nexusCmp   关系运算符
+	 * @param val        列值
+	 */
+	public Where(String columnName, NexusCmp nexusCmp, Object val) {
+		nodes.add(new WhereNode(LogicCmp.AND, columnName, nexusCmp, val));
+	}
+
+	public Where(LogicCmp logicCmp, String columnName, NexusCmp nexusCmp) {
+		nodes.add(new WhereNode(logicCmp, columnName, nexusCmp));
+	}
+
+	public Where(LogicCmp logicCmp, String columnName, NexusCmp nexusCmp, Object val) {
+		nodes.add(new WhereNode(logicCmp, columnName, nexusCmp, val));
+	}
+
+	public Where(LogicCmp logicCmp, String columnName, NexusCmp nexusCmp, Object val, boolean isStatementVal) {
+		nodes.add(new WhereNode(logicCmp, columnName, nexusCmp, val, isStatementVal));
+	}
+
 	public void setLimit(int offset, int limit) {
 		this.offset = offset;
 		this.limit = limit;
 	}
 
-	public String getOrderBy() {
-		return orderBy;
+	public void setOrderBy(String orderBy) {
+		this.orderBy = orderBy;
 	}
 
 	public void setOrderByDesc(String column) {
-		this.orderBy = SqlKwd.ORDER_BY.concat(column).concat(Constant.SPACE + OrderChar.DESC);
+		this.orderBy = StrTool.concat(SqlKwd.ORDER_BY, column, Constant.SPACE, OrderChar.DESC);
+	}
+
+	public void addOrderByDesc(String column) {
+		if (StrTool.isEmpty(this.orderBy)) {
+			this.setOrderByDesc(column);
+		} else {
+			this.orderBy = StrTool.concat(this.orderBy, ",", column, Constant.SPACE, OrderChar.DESC);
+		}
 	}
 
 	public void setOrderByAsc(String column) {
-		this.orderBy = SqlKwd.ORDER_BY.concat(column).concat(Constant.SPACE + OrderChar.ASC);
+		this.orderBy = StrTool.concat(SqlKwd.ORDER_BY, column, Constant.SPACE, OrderChar.ASC);
+	}
+
+	public void addOrderByAsc(String column) {
+		if (StrTool.isEmpty(this.orderBy)) {
+			this.setOrderByAsc(column);
+		} else {
+			this.orderBy = StrTool.concat(this.orderBy, ",", column, Constant.SPACE, OrderChar.ASC);
+		}
 	}
 
 	public void setNodes(List<WhereNode> conds) {
@@ -60,13 +117,35 @@ public class Where {
 		return nodes;
 	}
 
-	public Where andChildNodes(List<WhereNode> conds) {
-		conds.add(new WhereNode(LogicCmp.AND, conds));
+	public Where andChildNodes(List<WhereNode> nodes) {
+		this.nodes.add(new WhereNode(LogicCmp.AND, nodes));
 		return this;
 	}
 
-	public Where orChildNodes(List<WhereNode> conds) {
-		conds.add(new WhereNode(LogicCmp.OR, conds));
+	public Where orChildNodes(List<WhereNode> nodes) {
+		this.nodes.add(new WhereNode(LogicCmp.OR, nodes));
+		return this;
+	}
+
+	public Where andChildNodes(LogicCmp splitLogicCmp, String column, NexusCmp splitNexusCmp, List<Object> valueList) {
+		addChildNodes(LogicCmp.AND, splitLogicCmp, column, splitNexusCmp, valueList);
+		return this;
+	}
+
+	public Where orChildNodes(LogicCmp splitLogicCmp, String column, NexusCmp splitNexusCmp, List<Object> valueList) {
+		addChildNodes(LogicCmp.OR, splitLogicCmp, column, splitNexusCmp, valueList);
+		return this;
+	}
+
+	public Where addChildNodes(LogicCmp logicCmp, LogicCmp splitLogicCmp, String column, NexusCmp splitNexusCmp,
+			List<Object> valueList) {
+		if (CollectionTool.notEmpty(valueList)) {
+			List<WhereNode> childCondList = new ArrayList<>();
+			for (int i = 0; i < valueList.size(); i++) {
+				childCondList.add(new WhereNode(splitLogicCmp, column, splitNexusCmp, valueList.get(i)));
+			}
+			this.nodes.add(new WhereNode(logicCmp, childCondList));
+		}
 		return this;
 	}
 

@@ -1,7 +1,5 @@
 package com.mingri.mybatissmart;
 
-import static org.springframework.util.StringUtils.tokenizeToStringArray;
-
 import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -12,182 +10,242 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.annotation.PostConstruct;
+
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.util.StringUtils;
 
 import com.mingri.langhuan.cabinet.constant.FileSufx;
 import com.mingri.langhuan.cabinet.tool.ClassTool;
 import com.mingri.langhuan.cabinet.tool.FileTool;
 import com.mingri.langhuan.cabinet.tool.StrTool;
-import com.mingri.mybatissmart.annotation.ColumnInfo;
-import com.mingri.mybatissmart.annotation.RefTable;
-import com.mingri.mybatissmart.annotation.TableInfo;
+import com.mingri.mybatissmart.annotation.SmartColumn;
+import com.mingri.mybatissmart.annotation.SmartTable;
 import com.mingri.mybatissmart.barracks.DialectEnum;
 import com.mingri.mybatissmart.barracks.Tool;
-import com.mingri.mybatissmart.dbo.ColumnField;
-import com.mingri.mybatissmart.dbo.TableClass;
+import com.mingri.mybatissmart.dbo.SmartColumnInfo;
+import com.mingri.mybatissmart.dbo.SmartTableInfo;
 import com.mingri.mybatissmart.mapper.InternalMapper;
 
 /**
  * mybatis-smart 上下文
- * @author ljl
- * 2019年11月30日
+ * 
+ * @author ljl 2019年11月30日
  */
 public class MybatisSmartContext {
 
-	private MybatisSmartContext() {
+	private final static Logger LOGGER = LoggerFactory.getLogger(MybatisSmartContext.class);
+
+	private List<MybatisSmartConfiguration> configurations;
+
+	
+	
+	public List<MybatisSmartConfiguration> getConfigurations() {
+		return configurations;
 	}
 
-	private static SqlSessionFactory sessionFactory;
-	private static MybatisSmartProperties mybatisSmartProperties;
+	public void setConfigurations(List<MybatisSmartConfiguration> configurations) {
+		this.configurations = configurations;
+	}
+
+
+
+
 
 	/**
-	 *  表类映射信息
+	 * 表类映射信息
 	 */
-	private static final Map<Class<?>, TableClass> MAPPERS_INFO = new HashMap<>();
+	private static final Map<Class<?>, SmartTableInfo> SMART_TABLE_MAP = new HashMap<>();
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(MybatisSmartContext.class);
-
-	static void initConf(SqlSessionFactory sessionFactory, MybatisSmartProperties mybatisSmartProperties) {
-		MybatisSmartContext.sessionFactory = sessionFactory;
-		MybatisSmartContext.mybatisSmartProperties = mybatisSmartProperties;
-	}
-
-	public static TableClass getClassMapperInfo(Class<?> cl) throws SQLException {
-		TableClass res = MAPPERS_INFO.get(cl);
-		Class<?> tmpCl = cl;
-		if (res != null) {
-			return res;
-		} else {
-			cl = cl.getSuperclass();
-			while (cl != null && cl != Object.class) {
-				if (cl.getAnnotation(TableInfo.class) != null) {
-					res = MAPPERS_INFO.get(cl.getSuperclass());
-					if (res == null) {
-						return loadClassMapperInfo(cl);
-					}
-					return res;
-				} else {
-					RefTable refTable = cl.getAnnotation(RefTable.class);
-					if (refTable != null) {
-						res = MAPPERS_INFO.get(refTable.value());
-						if (res == null) {
-							return loadClassMapperInfo(refTable.value());
-						}
-						return res;
-					}
+	
+	
+	@PostConstruct
+	public void start() {
+		try {
+			org.apache.ibatis.session.Configuration ibatisConfiguration = null;
+			SqlSessionFactory sessionFactory = null;
+			for (MybatisSmartConfiguration configuration : configurations) {
+				sessionFactory = configuration.getSqlSessionFactory();
+				ibatisConfiguration = sessionFactory.getConfiguration();
+				if (!ibatisConfiguration.hasMapper(InternalMapper.class)) {
+					ibatisConfiguration.addMapper(InternalMapper.class);
 				}
-				cl = cl.getSuperclass();
+				scanSmartTable(configuration);
 			}
-			throw new MybatisSmartException(
-					"Class:" + tmpCl.getCanonicalName() + " 没有配置或者没有关联注解:" + TableInfo.class.getSimpleName());
+		} catch (Exception e) {
+			LOGGER.error("捕获到异常,打印日志", e);
+			throw new MybatisSmartException(e.getLocalizedMessage() + "---" + e.getMessage());
 		}
 	}
 
-	/**
-	 * 获取java字段名称和数据库字段名称
-	 * 
-	 * @param tableName 表名
-	 * @return key:fieldName val:columnName
-	 */
-	private static Map<String, String> getColumnAndFieldName(String tableName) {
-		List<String> columns = MybatisSmartContext.selectColumns(tableName);
-		Map<String, String> columnsCamel = new HashMap<>();
-		columns.forEach(column -> columnsCamel.put(StrTool.camel(column.toLowerCase()), column.toLowerCase()));
-		return columnsCamel;
+	public static SmartTableInfo getSmartTableInfo(Class<?> tableClass) {
+		// 。没有scanMapping
+		SmartTableInfo smti = SMART_TABLE_MAP.get(tableClass);
+		Class<?> tmpCl = tableClass;
+		if (smti != null) {
+			return smti;
+		} else {
+			while (tmpCl != null && tmpCl != Object.class) {
+				tmpCl = tmpCl.getSuperclass();
+				if (tmpCl.getAnnotation(SmartTable.class) != null) {// 。 拿父类的
+					smti = SMART_TABLE_MAP.get(tmpCl);
+					if (smti != null) {
+						return smti;
+					}
+				}
+			}
+			throw new MybatisSmartException(StrTool.concat("Class:", tableClass.getCanonicalName(), " 或者其父类 没有配置注解:@",
+					SmartTable.class.getSimpleName()).toString());
+		}
 	}
 
-	private static List<String> selectColumns(String tableName) {
-		try (SqlSession session = MybatisSmartContext.sessionFactory.openSession()) {
+	public static Set<String> getColumns(Class<?> cl) {
+		SmartTableInfo smti = getSmartTableInfo(cl);
+		if (smti != null) {
+			return smti.getSmartColumnInfoMap().keySet();
+		}
+		return Collections.emptySet();
+	}
+
+	public static String getTable(Class<?> cl) {
+		SmartTableInfo smti = getSmartTableInfo(cl);
+		if (smti != null) {
+			return smti.getSmartTable().value();
+		}
+		return null;
+	}
+
+	private List<String> selectColumns(String tableName, SqlSessionFactory sessionFactory) {
+		try (SqlSession session = sessionFactory.openSession()) {
 			return session.selectList(InternalMapper.SELECTFIELDS_STATEMENT,
 					tableName.replace("[", "").replace("]", ""));
 		} catch (Exception e) {
-			LOGGER.error("捕获到异常,打印日志：{}", e);
+			LOGGER.error("捕获到异常,打印日志", e);
 		}
 		return Collections.emptyList();
 	}
 
-	private static final Object LOAD_LOCAL = new Object();
+	private final static Object MAPPING_LOCAL = new Object();
+
+	private void validSmartTable(SmartTable tableInfo) {
+		String idFieldName = tableInfo.idFieldName();
+		if (tableInfo.value().length() == 0) {
+			throw new MybatisSmartException(SmartTable.class.getCanonicalName() + " 的value 不能为空");
+		}
+
+		if (idFieldName.length() == 0) {
+			throw new MybatisSmartException(SmartTable.class.getCanonicalName() + " 的idFieldName value 不能为空");
+		}
+	}
 
 	/**
-	 * 加载类的相关映射信息
+	 * 映射表模型
 	 * 
-	 * @param cl
+	 * @param smartTableClass
 	 * @return
 	 * @throws SQLException
 	 */
-	private static TableClass loadClassMapperInfo(Class<?> cl) throws SQLException {
-		TableClass clmif = MAPPERS_INFO.get(cl);
-		if (clmif != null) {
-			return clmif;
+	private LinkedHashMap<String, SmartColumnInfo> mappingSmartTable(Class<?> smartTableClass,
+			SqlSessionFactory sqlSessionFactory) throws SQLException {
+
+		SmartTable tableInfo = smartTableClass.getAnnotation(SmartTable.class);
+		if (tableInfo == null) {
+			return null;
 		}
-		synchronized (LOAD_LOCAL) {
-			clmif = MAPPERS_INFO.get(cl);
-			if (clmif != null) {
-				return clmif;
-			}
+		validSmartTable(tableInfo);
 
-			TableInfo tableInfo = cl.getAnnotation(TableInfo.class);
-			if (tableInfo == null) {
-				return null;
-			}
-			String idFieldName = tableInfo.idFieldName();
-			if (tableInfo.value().length() == 0) {
-				throw new MybatisSmartException(TableInfo.class.getCanonicalName() + " 的value 不能为空");
-			}
-			if (idFieldName.length() == 0) {
-				throw new MybatisSmartException(TableInfo.class.getCanonicalName() + " 的idFieldName value 不能为空");
-			}
-			Map<String, String> columnsCamel = getColumnAndFieldName(tableInfo.value());
+		Map<String, String> fieldAndColumnName = getFieldAndColumnNameMap(tableInfo.value(), sqlSessionFactory);
+		List<Field> fieldList = ClassTool.getDecararedFields(smartTableClass, false);
+		LinkedHashMap<String, SmartColumnInfo> columnFieldMap = new LinkedHashMap<>();
 
-			List<Field> flist = ClassTool.getDecararedFields(cl, false);
-			LinkedHashMap<String, ColumnField> fieldsMapperMap = new LinkedHashMap<>();
+		for (Field field : fieldList) {
 
-			TableClass res = new TableClass();
-			res.setDialect(getDialect());
-			flist.forEach(field -> {
-				ColumnInfo columnInfo = field.getAnnotation(ColumnInfo.class);
-				String columnName = "";
-				if (columnInfo != null) {
-					columnName = columnInfo.value().toLowerCase();
+			SmartColumn columnInfo = field.getAnnotation(SmartColumn.class);
+			String columnName = columnInfo == null ? StrTool.EMPTY
+					: Tool.unifiedColumnName(StrTool.toString(columnInfo.value()));
+			if (columnName.isEmpty()) {
+				// 。根据驼峰规则自动映射
+				columnName = fieldAndColumnName.get(field.getName());
+				if (columnName == null) {
+					// 。 该字段没有映射的列
+					continue;
 				}
-
-				if (columnName.length() > 0) {
-					if (!columnsCamel.containsValue(columnName)) {
-						throw new MybatisSmartException("table:" + tableInfo.value() + " 没有该column:" + columnName);
-					}
-					ColumnField fieldMapperInfo = fieldsMapperMap.get(columnName);
-					if (fieldMapperInfo == null) {
-						fieldsMapperMap.put(columnName, new ColumnField(field, columnInfo));
-					} else if (fieldMapperInfo.getField().getDeclaringClass()
-							.isAssignableFrom(field.getDeclaringClass())) {// 子类字段覆盖父类字段
-						fieldMapperInfo.setField(field);
-					}
+			} else {
+				// 。根据注解配置映射
+				if (!fieldAndColumnName.containsValue(columnName)) {
+					throw new MybatisSmartException(
+							StrTool.concat(tableInfo.value(), " 表中没有字段:", columnName).toString());
+				}
+			}
+			SmartColumnInfo smci = columnFieldMap.get(columnName);
+			if (smci == null) {
+				columnFieldMap.put(columnName, new SmartColumnInfo(field, columnInfo));
+			} else {
+				if (field.getDeclaringClass() == smci.getField().getDeclaringClass()) {
+					throw new MybatisSmartException(StrTool.concat(smartTableClass.getCanonicalName(),
+							" 类中字段名称解析相同，字段:", smci.getField().getName(), "和", field.getName()).toString());
 				} else {
-					columnName = columnsCamel.get(field.getName());
-					if (columnName != null) {
-						ColumnField fieldMapperInfo = fieldsMapperMap.get(columnName);
-						if (fieldMapperInfo == null) {
-							fieldsMapperMap.put(columnName, new ColumnField(field, columnInfo));
-						} else if (fieldMapperInfo.getField().getDeclaringClass()
-								.isAssignableFrom(field.getDeclaringClass())) {// 子类字段覆盖父类字段
-							fieldMapperInfo.setField(field);
+					smci.setField(field);
+					smci.setSmartColumn(columnInfo);
+				}
+			}
+		}
+		return columnFieldMap;
+	}
+
+	/**
+	 * 扫描数据模型
+	 */
+	private void scanSmartTable(MybatisSmartConfiguration configuration) throws ClassNotFoundException, SQLException {
+		String mdpkg = configuration.getTablePackages();
+		SqlSessionFactory sqlSessionFactory = configuration.getSqlSessionFactory();
+		DialectEnum dialect = DialectEnum.ofName(configuration.getDialect());
+		String sqlSessionFactoryBeanName = StrTool.toString(configuration.getSqlSessionFactoryBeanName());
+		if (StrTool.isNotEmpty(mdpkg)) {
+			String[] mdpkgArray = StringUtils.tokenizeToStringArray(mdpkg,
+					ConfigurableApplicationContext.CONFIG_LOCATION_DELIMITERS);
+			ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+			for (String packageName : mdpkgArray) {
+				LOGGER.info("==============================MybatisSmart {} 开始扫描tablePackage:{}", sqlSessionFactoryBeanName,
+						packageName);
+				List<String> classList = FileTool.scanClass(packageName, true);
+				LOGGER.info("==============================MybatisSmart {} 开始扫描{}", sqlSessionFactoryBeanName,
+						classList);
+				for (String classFileName : classList) {
+					try {
+						Class<?> smartTableClazz = classLoader.loadClass(
+								classFileName.substring(0, classFileName.length() - FileSufx.CLAZZ.length()));
+						if (smartTableClazz.getAnnotation(SmartTable.class) == null) {
+							continue;
 						}
+						synchronized (MAPPING_LOCAL) {
+							SmartTableInfo tableModelInfo = SMART_TABLE_MAP.get(smartTableClazz);
+							if (tableModelInfo != null) {
+								return;
+							}
+							LinkedHashMap<String, SmartColumnInfo> smartColumnInfoMap = mappingSmartTable(
+									smartTableClazz, sqlSessionFactory);
+							DialectEnum dialectEnum = getDialect(sqlSessionFactory);
+							if (dialectEnum != null) {
+								dialect = dialectEnum;
+							}
+							SmartTableInfo smartTableInfo = new SmartTableInfo.Builder(smartTableClazz,
+									sqlSessionFactory, dialect).builder(smartColumnInfoMap);
+							SMART_TABLE_MAP.put(smartTableClazz, smartTableInfo);
+						}
+						LOGGER.info("MybatisSmart {} Scanned class: {} for tablePackage: {}", sqlSessionFactoryBeanName,
+								classFileName, packageName);
+					} catch (ClassNotFoundException | SQLException e) {
+						LOGGER.error("MybatisSmart {} 扫描tablePackage出错： {}", sqlSessionFactoryBeanName,e);
+						throw e;
 					}
 				}
-				if (field.getName().equals(idFieldName)) {
-					res.setIdField(field);
-					res.setIdColumnName(columnName);
-				}
-			});
-			res.setClazz(cl);
-			res.setFieldsMapperMap(fieldsMapperMap);
-			res.setTableInfo(tableInfo);
-			MAPPERS_INFO.put(cl, res);
-			return res;
+
+			}
 		}
 	}
 
@@ -197,71 +255,26 @@ public class MybatisSmartContext {
 	 * @return
 	 * @throws SQLException
 	 */
-	private static DialectEnum getDialect() throws SQLException {
-		if (!MAPPERS_INFO.isEmpty()) {
-			return MAPPERS_INFO.entrySet().iterator().next().getValue().getDialect();
-		}
-		try (Connection conn = MybatisSmartContext.sessionFactory.openSession().getConnection()) {
+	private DialectEnum getDialect(SqlSessionFactory sessionFactory) throws SQLException {
+		try (Connection conn = sessionFactory.openSession().getConnection()) {
 			return Tool.getDialect(conn);
 		}
 	}
 
 	/**
-	 * 扫描数据模型
+	 * 获取java字段名称和数据库字段名称
+	 * 
+	 * @param tableName 表名
+	 * @return key:fieldName val:columnName
 	 */
-	public static void scanTableModel() throws ClassNotFoundException, SQLException {
-		String mdpkg = mybatisSmartProperties.getModelPackage();
-		LOGGER.info("==============================MybatisSmart开始扫描实体类,扫描的包{}", mdpkg);
-		if (StrTool.isNotEmpty(mdpkg)) {
-			String[] mdpkgArray = tokenizeToStringArray(mdpkg,
-					ConfigurableApplicationContext.CONFIG_LOCATION_DELIMITERS);
-			ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-			for (String packageName : mdpkgArray) {
-				LOGGER.info("==============================MybatisSmart开始扫描包{}", packageName);
-				List<String> classList = FileTool.scanClass(packageName, true);
-				LOGGER.info("==============================MybatisSmart扫描到的类:{}", classList);
-				for (String classFileName : classList) {
-						try {
-							Class<?> cl = classLoader.loadClass(classFileName.substring(0,
-									classFileName.length() - FileSufx.CLAZZ.length()));
-							MybatisSmartContext.loadClassMapperInfo(cl);
-							LOGGER.info("MybatisSmart Scanned class: {} for modelPackage: {}", classFileName,
-									packageName);
-						} catch (ClassNotFoundException | SQLException e) {
-							LOGGER.error("MybatisSmart 扫描modelPackage出错： {}", e);
-							throw e;
-						}
-				}
-
-			}
-		}
-	}
-
-
-	public static Set<String> getColumns(Class<?> cl) {
-		TableClass res = null;
-		try {
-			res = getClassMapperInfo(cl);
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		if (res != null) {
-			return res.getFieldsMapperMap().keySet();
-		}
-		return Collections.emptySet();
-	}
-
-	public static String getTable(Class<?> cl) {
-		TableClass res = null;
-		try {
-			res = getClassMapperInfo(cl);
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		if (res != null) {
-			return res.getTableInfo().value();
-		}
-		return null;
+	private Map<String, String> getFieldAndColumnNameMap(String tableName, SqlSessionFactory sqlSessionFactory) {
+		List<String> columns = selectColumns(tableName, sqlSessionFactory);
+		Map<String, String> columnsCamel = new HashMap<>();
+		columns.forEach(column -> {
+			String columnName = Tool.unifiedColumnName(column);
+			columnsCamel.put(StrTool.camel(columnName), columnName);
+		});
+		return columnsCamel;
 	}
 
 }

@@ -8,6 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.ibatis.session.SqlSessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,36 +17,38 @@ import com.mingri.langhuan.cabinet.constant.ValTypeEnum;
 import com.mingri.langhuan.cabinet.tool.ClassTool;
 import com.mingri.langhuan.cabinet.tool.StrTool;
 import com.mingri.mybatissmart.MybatisSmartException;
-import com.mingri.mybatissmart.annotation.ColumnInfo;
-import com.mingri.mybatissmart.annotation.TableInfo;
+import com.mingri.mybatissmart.annotation.SmartColumn;
+import com.mingri.mybatissmart.annotation.SmartTable;
 import com.mingri.mybatissmart.barracks.DialectEnum;
+import com.mingri.mybatissmart.dbo.MapperSql.Select;
 import com.mingri.mybatissmart.dbo.MapperSql.WhereSql;
 
-public class TableClass {
+public class SmartTableInfo {
 
-	private TableInfo tableInfo;
+	private SmartTable smartTable;
 	private Field idField;
 	private String idColumnName;
 	private Class<?> clazz;
-	LinkedHashMap<String, ColumnField> fieldsMapperMap;// key:columnName
+	LinkedHashMap<String, SmartColumnInfo> smartColumnInfoMap;// key:columnName
 	private DialectEnum dialect;
+	private SqlSessionFactory sqlSessionFactory;
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(TableClass.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(SmartTable.class);
 
 	public Field getIdField() {
 		return idField;
 	}
-
+ 
 	public void setIdField(Field idField) {
 		this.idField = idField;
 	}
 
-	public TableInfo getTableInfo() {
-		return tableInfo;
+	public SmartTable getSmartTable() {
+		return smartTable;
 	}
 
-	public void setTableInfo(TableInfo tableInfo) {
-		this.tableInfo = tableInfo;
+	public void setSmartTable(SmartTable smartTable) {
+		this.smartTable = smartTable;
 	}
 
 	public Class<?> getClazz() {
@@ -56,12 +59,12 @@ public class TableClass {
 		this.clazz = clazz;
 	}
 
-	public LinkedHashMap<String, ColumnField> getFieldsMapperMap() {
-		return fieldsMapperMap;
+	public LinkedHashMap<String, SmartColumnInfo> getSmartColumnInfoMap() {
+		return smartColumnInfoMap;
 	}
 
-	public void setFieldsMapperMap(LinkedHashMap<String, ColumnField> fieldsMapperMap) {
-		this.fieldsMapperMap = fieldsMapperMap;
+	public void setSmartColumnInfoMap(LinkedHashMap<String, SmartColumnInfo> smartColumnInfoMap) {
+		this.smartColumnInfoMap = smartColumnInfoMap;
 	}
 
 	public String getIdColumnName() {
@@ -70,6 +73,14 @@ public class TableClass {
 
 	public void setIdColumnName(String idColumnName) {
 		this.idColumnName = idColumnName;
+	}
+
+	public SqlSessionFactory getSqlSessionFactory() {
+		return sqlSessionFactory;
+	}
+
+	public void setSqlSessionFactory(SqlSessionFactory sqlSessionFactory) {
+		this.sqlSessionFactory = sqlSessionFactory;
 	}
 
 	public DialectEnum getDialect() {
@@ -82,18 +93,23 @@ public class TableClass {
 
 	@SuppressWarnings("unchecked")
 	public String getInsertSql(Object obj) throws Exception {
-		MapperSql.Insert insert = MapperSql.insertInto(tableInfo.value());
+		MapperSql.Insert insert = MapperSql.insertInto(smartTable.value());
 
-		Collection<Object> dataList = obj instanceof Collection ? dataList = (Collection<Object>) obj
-				: Collections.singletonList(obj);
-		Integer index = dataList.size() > 1 ? 0 : null;
-		ColumnInfo columnInfo = null;
+		Collection<Object> dataList = null;
+		Integer index = null;
+		if (obj instanceof Collection) {
+			index = 0;
+			dataList = (Collection<Object>) obj;
+		} else {
+			dataList = Collections.singletonList(obj);
+		}
+		SmartColumn columnInfo = null;
 		String colmVal = null;
 		String colmName = null;
 		Field field = null;
 		for (Object rowObj : dataList) {
-			for (Map.Entry<String, ColumnField> en : fieldsMapperMap.entrySet()) {
-				columnInfo = en.getValue().getColumnInfo();
+			for (Map.Entry<String, SmartColumnInfo> en : smartColumnInfoMap.entrySet()) {
+				columnInfo = en.getValue().getSmartColumn();
 				colmName = en.getKey();
 				if (columnInfo != null && columnInfo.isInsert() == false) {
 					continue;
@@ -103,7 +119,7 @@ public class TableClass {
 				/*
 				 * id处理
 				 */
-				colmVal = MapperSqlTool.generateIdIfIdFieldAndDftIdtactic(field, rowObj, tableInfo);
+				colmVal = MapperSqlTool.generateIdIfIdFieldAndDftIdtactic(field, rowObj, smartTable);
 				if (colmVal != null) {
 					insert.intoColumn(colmName, index);
 					insert.intoValue("'" + colmVal + "'");
@@ -141,7 +157,7 @@ public class TableClass {
 						if (StrTool.checkNotEmpty(srcVal)) {
 							insert.intoColumn(colmName, index);
 							insert.intoValue(colmVal);
-						} else if (index != null) {// 。批量新增时
+						} else if (index != null) {// 批量新增时
 							insert.intoColumn(colmName, index);
 							insert.intoValue(ValTypeEnum.NULL.code);
 						}
@@ -163,21 +179,21 @@ public class TableClass {
 	}
 
 	public String getUpdateByWhereSql(Object obj, Where where) throws Exception {
-		ColumnInfo columnInfo = null;
+		SmartColumn columnInfo = null;
 		String colmVal = null;
 		Field field = null;
 		WhereSql whereSql = MapperSqlTool.buildWhere(obj, where, this);
 		if (whereSql == null || whereSql.isEmpty()) {
 			throw new MybatisSmartException("必须设置where条件");
 		}
-		MapperSql.Update updateSql = MapperSql.update(tableInfo.value());
+		MapperSql.Update updateSql = MapperSql.update(smartTable.value());
 		String column = null;
-		for (Map.Entry<String, ColumnField> en : fieldsMapperMap.entrySet()) {
+		for (Map.Entry<String, SmartColumnInfo> en : smartColumnInfoMap.entrySet()) {
 			field = en.getValue().getField();
-			if (field.getName().equals(tableInfo.idFieldName())) {
+			if (field.getName().equals(smartTable.idFieldName())) {
 				continue;
 			}
-			columnInfo = en.getValue().getColumnInfo();
+			columnInfo = en.getValue().getSmartColumn();
 			if (columnInfo != null && !columnInfo.isUpdate()) {
 				continue;
 			}
@@ -203,29 +219,88 @@ public class TableClass {
 	}
 
 	public String getSelectByIdSql(Object idV) {
-		MapperSql sql = MapperSql.select(MapperSqlTool.getColumns(this), tableInfo.value())
-				.where(MapperSql.where().add( " " + idColumnName + "='" + idV + "'")).build();
+		MapperSql sql = MapperSql.select(MapperSqlTool.getColumns(this), smartTable.value())
+				.where(MapperSql.where().add(" " + idColumnName + "='" + idV + "'")).build();
 		return sql.toString();
 	}
 
 	public String getSelectByWhereSql(Object obj, Where where) throws IllegalArgumentException, IllegalAccessException {
 		WhereSql whereSql = MapperSqlTool.buildWhere(obj, where, this);
-		return MapperSql.select(MapperSqlTool.getColumns(this), tableInfo.value()).where(whereSql).orderBy(where.getOrderBy())
-				.limit(where.getLimit(), where.getOffset(), dialect).build().toString();
+		Select selectSql = MapperSql.select(MapperSqlTool.getColumns(this), smartTable.value()).where(whereSql);
+		if (where != null) {
+			selectSql.orderBy(where.getOrderBy()).limit(where.getLimit(), where.getOffset(), dialect);
+		}
+		return selectSql.build().toString();
 	}
 
 	public String getCountByWhereSql(Object obj, Where where) throws IllegalArgumentException, IllegalAccessException {
 		WhereSql whereSql = MapperSqlTool.buildWhere(obj, where, this);
-		MapperSql sql = MapperSql.select(" count(*) ", tableInfo.value()).where(whereSql).build();
+		MapperSql sql = MapperSql.select(" count(*) ", smartTable.value()).where(whereSql).build();
 		return sql.toString();
 	}
 
 	public String getDeleteByWhereSql(Object obj, Where where) throws IllegalArgumentException, IllegalAccessException {
 		WhereSql whereSql = MapperSqlTool.buildWhere(obj, where, this);
-		return MapperSql.delete(tableInfo.value()).setWhere(whereSql).build().toString();
+		return MapperSql.delete(smartTable.value()).setWhere(whereSql).build().toString();
 	}
 
 	public String getDeleteByIdSql(Object idV) {
-		return MapperSql.delete(tableInfo.value()).setWhere(MapperSql.where().add( " " + idColumnName + "='" + idV + "'")).build().toString();
+		return MapperSql.delete(smartTable.value())
+				.setWhere(MapperSql.where().add(" " + idColumnName + "='" + idV + "'")).build().toString();
+	}
+
+	public static class Builder {
+
+		private SmartTableInfo smartTableInfo;
+
+		public Builder(Class<?> smartTableClazz, SqlSessionFactory sqlSessionFactory, DialectEnum dialect) {
+			smartTableInfo = new SmartTableInfo();
+			SmartTable smartTable = smartTableClazz.getAnnotation(SmartTable.class);
+			try {
+				validSmartTable(smartTable);
+				Field idField = ClassTool.searchDecararedField(smartTableClazz, smartTable.idFieldName());
+				if (idField == null) {
+					throw new MybatisSmartException(
+							StrTool.concat(smartTableClazz.getCanonicalName(), "没有定义字段：", smartTable.idFieldName())
+									.toString());
+				}
+				smartTableInfo.setIdField(idField);
+			} catch (Exception e) {
+				LOGGER.error("", e);
+				throw new MybatisSmartException(StrTool.concat(smartTableClazz.getCanonicalName(), " @",
+						SmartTable.class.getSimpleName(), " 配置有误：", e.getMessage()).toString());
+			}
+			smartTableInfo.setSmartTable(smartTable);
+			smartTableInfo.setClazz(smartTableClazz);
+			smartTableInfo.setSqlSessionFactory(sqlSessionFactory);
+			smartTableInfo.setDialect(dialect);
+		}
+
+		public SmartTableInfo builder(LinkedHashMap<String, SmartColumnInfo> smartColumnInfoMap) {
+			smartTableInfo.setSmartColumnInfoMap(smartColumnInfoMap);
+			for (Map.Entry<String, SmartColumnInfo> entry : smartColumnInfoMap.entrySet()) {
+				if (entry.getValue().getField().equals(smartTableInfo.getIdField())) {
+					smartTableInfo.setIdColumnName(entry.getKey());
+					break;
+				}
+			}
+			if (StrTool.isEmpty(smartTableInfo.getIdColumnName())) {
+				throw new MybatisSmartException(StrTool.concat(smartTableInfo.clazz.getCanonicalName(), " @",
+						SmartTable.class.getSimpleName(), " 配置有误：", "表中没有对应的主键").toString());
+			}
+			return smartTableInfo;
+		}
+
+		private static void validSmartTable(SmartTable smartTable) {
+			String idFieldName = smartTable.idFieldName();
+			if (smartTable.value().length() == 0) {
+				throw new MybatisSmartException("没有配置映射表");
+			}
+
+			if (idFieldName.length() == 0) {
+				throw new MybatisSmartException("没有配置唯一字段");
+			}
+		}
+
 	}
 }

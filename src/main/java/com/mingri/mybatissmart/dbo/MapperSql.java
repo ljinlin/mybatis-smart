@@ -7,14 +7,14 @@ import com.mingri.mybatissmart.barracks.Constant;
 import com.mingri.mybatissmart.barracks.DialectEnum;
 import com.mingri.mybatissmart.barracks.SqlKwd;
 
- class MapperSql {
+class MapperSql {
 
 	private StringBuilder statementSql = new StringBuilder();
 
 	private MapperSql() {
 	}
 
-	 class Select {
+	class Select {
 
 		private WhereSql where;
 		private String orderBy;
@@ -78,7 +78,7 @@ import com.mingri.mybatissmart.barracks.SqlKwd;
 		}
 	}
 
-	 class Insert {
+	class Insert {
 
 		private StringBuilder intoColumns = null;
 		private StringBuilder intoValues = null;
@@ -123,7 +123,7 @@ import com.mingri.mybatissmart.barracks.SqlKwd;
 
 	}
 
-	 class Delete {
+	class Delete {
 
 		private WhereSql where = null;
 
@@ -144,7 +144,7 @@ import com.mingri.mybatissmart.barracks.SqlKwd;
 		}
 	}
 
-	 class Update {
+	class Update {
 
 		private StringBuilder sets = new StringBuilder();
 		private WhereSql where = null;
@@ -172,7 +172,10 @@ import com.mingri.mybatissmart.barracks.SqlKwd;
 		}
 	}
 
-	 class WhereSql {
+	private static final String OR_UPCASE = LogicCmp.OR.code.toUpperCase();
+	private static final String AND_UPCASE = LogicCmp.AND.code.toUpperCase();
+
+	class WhereSql {
 
 		private StringBuilder nodes = new StringBuilder();
 
@@ -181,7 +184,8 @@ import com.mingri.mybatissmart.barracks.SqlKwd;
 				nodes.append(Constant.SPACE).append(logicCmp.code);
 			}
 			nodes.append(Constant.SPACE);
-			nodes.append(columnName).append(Constant.SPACE).append(nexusCmp.code).append(Constant.SPACE).append(columnVal).append(Constant.SPACE);
+			nodes.append(columnName).append(Constant.SPACE).append(nexusCmp.code).append(Constant.SPACE)
+					.append(columnVal).append(Constant.SPACE);
 			return this;
 		}
 
@@ -191,7 +195,8 @@ import com.mingri.mybatissmart.barracks.SqlKwd;
 			}
 			nodes.append(Constant.SPACE);
 			if (whereSql != null && whereSql.nodes.length() > 0) {
-				nodes.append(" ( ").append(whereSql.nodes.toString()).append(" ) ");
+				String condSql = trimCondSql(whereSql.nodes.toString());
+				nodes.append(" ( ").append(condSql).append(" ) ");
 			}
 			return this;
 		}
@@ -200,19 +205,23 @@ import com.mingri.mybatissmart.barracks.SqlKwd;
 			if (nodes.length() > 0) {
 				nodes.append(Constant.SPACE).append(afterConditionSql);
 			} else {
-				afterConditionSql = afterConditionSql.trim();
-				int len = afterConditionSql.length();
-				afterConditionSql = StrTool.delStartAndEnd(afterConditionSql, LogicCmp.OR.code);
-				if (len == afterConditionSql.length())
-					afterConditionSql = StrTool.delStartAndEnd(afterConditionSql, LogicCmp.AND.code);
-				if (len == afterConditionSql.length())
-					afterConditionSql = StrTool.delStartAndEnd(afterConditionSql, LogicCmp.OR.code.toUpperCase());
-				if (len == afterConditionSql.length())
-					afterConditionSql = StrTool.delStartAndEnd(afterConditionSql, LogicCmp.AND.code.toUpperCase());
-
+				afterConditionSql = trimCondSql(afterConditionSql);
 				nodes.append(Constant.SPACE).append(afterConditionSql);
 			}
 			return this;
+		}
+
+		private String trimCondSql(String condSql) {
+			condSql = condSql.trim();
+			int len = condSql.length();
+			condSql = StrTool.trimEdge(condSql, LogicCmp.OR.code);
+			if (len == condSql.length())
+				condSql = StrTool.trimEdge(condSql, LogicCmp.AND.code);
+			if (len == condSql.length())
+				condSql = StrTool.trimEdge(condSql, OR_UPCASE);
+			if (len == condSql.length())
+				condSql = StrTool.trimEdge(condSql, AND_UPCASE);
+			return condSql;
 		}
 
 		boolean isEmpty() {

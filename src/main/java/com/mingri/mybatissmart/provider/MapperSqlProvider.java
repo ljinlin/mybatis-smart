@@ -1,14 +1,13 @@
 package com.mingri.mybatissmart.provider;
 
-import java.sql.SQLException;
-
 import org.apache.ibatis.annotations.Param;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.mingri.mybatissmart.MybatisSmartContext;
 import com.mingri.mybatissmart.barracks.Constant;
-import com.mingri.mybatissmart.dbo.TableClass;
+import com.mingri.mybatissmart.barracks.SqlPrint;
+import com.mingri.mybatissmart.dbo.SmartTableInfo;
 import com.mingri.mybatissmart.dbo.Where;
 
 /**
@@ -20,43 +19,41 @@ public class MapperSqlProvider {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MapperSqlProvider.class);
 
-	
-
 	public String select(@Param(Constant.PARAM_KEY) Object obj, @Param(Constant.COND_KEY) Where where) {
 		SqlBuildParam paramWrapper=new SqlBuildParam.Builder(obj).build();
-		TableClass cmi = paramWrapper.getCmi();
+		SmartTableInfo smti = paramWrapper.getSmti();
 		String sql = null;
 		try {
-			sql = cmi.getSelectByWhereSql(paramWrapper.getParam(), where);
-			LOGGER.info(sql);
+			sql = smti.getSelectByWhereSql(paramWrapper.getParam(), where);
+			SqlPrint.instance().print(LOGGER,sql);
 		} catch (Exception e) {
-			LOGGER.error("sql构建异常:{}", e);
+			LOGGER.error("sql构建异常:", e);
 		}
 		return sql;
 	}
 	
 	public String selectById(Object idV, Class<?> cl) {
-		TableClass cmi;
+		SmartTableInfo smti;
 		String sql = null;
 		try {
-			cmi = MybatisSmartContext.getClassMapperInfo(cl);
-			 sql = cmi.getSelectByIdSql(idV);
+			smti = MybatisSmartContext.getSmartTableInfo(cl);
+			 sql = smti.getSelectByIdSql(idV);
 			LOGGER.info(sql);
-		} catch (SQLException e) {
-			LOGGER.error("sql构建异常:{}", e);
+		} catch (Exception e) {
+			LOGGER.error("sql构建异常:", e);
 		}
 		return sql;
 	}
 
 	public String count(@Param(Constant.PARAM_KEY) Object obj, @Param(Constant.COND_KEY) Where where) {
 		SqlBuildParam paramWrapper=new SqlBuildParam.Builder(obj).build();
-		TableClass cmi = paramWrapper.getCmi();
+		SmartTableInfo smti = paramWrapper.getSmti();
 		String sql = null;
 		try {
-			sql = cmi.getCountByWhereSql(paramWrapper.getParam(), where);
-			LOGGER.info(sql);
+			sql = smti.getCountByWhereSql(paramWrapper.getParam(), where);
+			SqlPrint.instance().print(LOGGER,sql);
 		} catch (Exception e) {
-			LOGGER.error("sql构建异常:{}", e);
+			LOGGER.error("sql构建异常:", e);
 		}
 		return sql;
 	}
@@ -64,68 +61,65 @@ public class MapperSqlProvider {
 
 	public String delete(@Param(Constant.PARAM_KEY) Object obj, @Param(Constant.COND_KEY) Where where) {
 		SqlBuildParam paramWrapper=new SqlBuildParam.Builder(obj).build();
-		TableClass cmi = paramWrapper.getCmi();
+		SmartTableInfo smti = paramWrapper.getSmti();
 		
 		String sql = null;
 		try {
-			sql = cmi.getDeleteByWhereSql(paramWrapper.getParam(), where);
-			LOGGER.info(sql);
+			sql = smti.getDeleteByWhereSql(paramWrapper.getParam(), where);
+			SqlPrint.instance().print(LOGGER,sql);
 		} catch (Exception e) {
-			LOGGER.error("sql构建异常:{}", e);
+			LOGGER.error("sql构建异常:", e);
 		}
 		return sql;
 	}
 	public String insert(@Param(Constant.PARAM_KEY) Object obj) {
-		long sttime = System.currentTimeMillis();
 		SqlBuildParam paramWrapper=new SqlBuildParam.Builder(obj).build();
-		TableClass cmi = paramWrapper.getCmi();
+		SmartTableInfo smti = paramWrapper.getSmti();
 		String sql = null;
 		try {
-			sql = cmi.getInsertSql(paramWrapper.getParam());
-			long edtime = System.currentTimeMillis();
-			LOGGER.info("构建SQL耗时:{},sql:{}", (edtime - sttime), sql);
+			sql = smti.getInsertSql(paramWrapper.getParam());
 		} catch (Exception e) {
-			LOGGER.error("sql构建异常:{}", e);
+			LOGGER.error("sql构建异常:", e);
 		}
 		return sql;
 	}
 
 	public String updateById(@Param(Constant.PARAM_KEY) Object obj) {
 		SqlBuildParam paramWrapper=new SqlBuildParam.Builder(obj).build();
-		TableClass cmi = paramWrapper.getCmi();
+		SmartTableInfo smti = paramWrapper.getSmti();
 		String sql = null;
 		try {
-			sql = cmi.getUpdateByIdSql(paramWrapper.getParam());
-			LOGGER.info(sql);
+			sql = smti.getUpdateByIdSql(paramWrapper.getParam());
+			SqlPrint.instance().print(LOGGER,sql);
 		} catch (Exception e) {
-			LOGGER.error("sql构建异常:{}", e);
+			LOGGER.error("sql构建异常:", e);
 		}
 		return sql;
 	}
 
 	public String updateByWhere(@Param(Constant.PARAM_KEY) Object obj, @Param(Constant.COND_KEY) Where where) {
 		SqlBuildParam paramWrapper=new SqlBuildParam.Builder(obj).build();
-		TableClass cmi = paramWrapper.getCmi();
+		SmartTableInfo smti = paramWrapper.getSmti();
 		String sql = null;
 		try {
-			sql = cmi.getUpdateByWhereSql(paramWrapper.getParam(), where);
-			LOGGER.info(sql);
+			sql = smti.getUpdateByWhereSql(paramWrapper.getParam(), where);
+			SqlPrint.instance().print(LOGGER,sql);
 		} catch (Exception e) {
-			LOGGER.error("sql构建异常:{}", e);
+			LOGGER.error("sql构建异常:", e);
 		}
 		return sql;
 	}
 
 	public String deleteById(Object idV, Class<?> cl) {
 		SqlBuildParam paramWrapper=new SqlBuildParam.Builder(idV).setClazz(cl).build();
-		TableClass cmi;
+		SmartTableInfo smti;
 		String sql = null;
 		try {
-			 cmi = MybatisSmartContext.getClassMapperInfo(cl);
-			sql = cmi.getDeleteByIdSql(paramWrapper.getParam());
-			LOGGER.info(sql);
+			 smti = paramWrapper.getSmti();
+			sql = smti.getDeleteByIdSql(paramWrapper.getParam());
+			SqlPrint.instance().print(LOGGER,sql);
 		} catch (Exception e) {
-			LOGGER.error("sql构建异常: {}", e);
+			LOGGER.error("sql构建异常: ", e);
 		}
 		return sql;
 	}

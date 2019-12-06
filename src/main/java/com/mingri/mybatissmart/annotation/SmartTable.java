@@ -18,7 +18,7 @@ import com.mingri.mybatissmart.barracks.IdtacticsEnum;
 @Target({ ElementType.TYPE })
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-public @interface TableInfo {
+public @interface SmartTable {
 
 	/**
 	 *  表名

@@ -16,8 +16,8 @@ import com.mingri.langhuan.cabinet.constant.ValTypeEnum;
 import com.mingri.langhuan.cabinet.tool.ClassTool;
 import com.mingri.langhuan.cabinet.tool.CollectionTool;
 import com.mingri.langhuan.cabinet.tool.StrTool;
-import com.mingri.mybatissmart.annotation.ColumnInfo;
-import com.mingri.mybatissmart.annotation.TableInfo;
+import com.mingri.mybatissmart.annotation.SmartColumn;
+import com.mingri.mybatissmart.annotation.SmartTable;
 import com.mingri.mybatissmart.barracks.Constant;
 import com.mingri.mybatissmart.barracks.IdtacticsEnum;
 import com.mingri.mybatissmart.barracks.SqlKwd;
@@ -25,14 +25,14 @@ import com.mingri.mybatissmart.dbo.MapperSql.WhereSql;
 
 class MapperSqlTool {
 
-	static WhereSql buildWhere(Object obj, Where where, TableClass tableClass)
+	static WhereSql buildWhere(Object obj, Where where, SmartTableInfo tableClass)
 			throws IllegalArgumentException, IllegalAccessException {
 
-		List<WhereNode> nodes = where.getNodes();
+		List<WhereNode> nodes = where == null ? null : where.getNodes();
 		if (where == null || CollectionTool.isEmpty(nodes)) {
 			return null;
 		}
-
+ 
 		MapperSql.WhereSql whereSql = MapperSql.where();
 		if (obj != null) {
 			MapperSqlTool.buildWhere(obj, nodes, tableClass, whereSql);
@@ -45,7 +45,7 @@ class MapperSqlTool {
 		return whereSql;
 	}
 
-	private static WhereSql buildWhere(Object obj, List<WhereNode> conds, TableClass tableClass, WhereSql whereSql)
+	private static WhereSql buildWhere(Object obj, List<WhereNode> conds, SmartTableInfo tableClass, WhereSql whereSql)
 			throws IllegalArgumentException, IllegalAccessException {
 		if (conds.isEmpty()) {
 			return null;
@@ -62,7 +62,7 @@ class MapperSqlTool {
 			String columnVal = null;
 			Object condSrcVal = cond.getVal();
 			NexusCmp nexusCmp = cond.getNexusCmp();
-			ColumnField fim = tableClass.fieldsMapperMap.get(columnName);
+			SmartColumnInfo fim = tableClass.smartColumnInfoMap.get(columnName);
 
 			if (condSrcVal != null) {
 				if (cond.isStatementVal()) {
@@ -92,12 +92,16 @@ class MapperSqlTool {
 	 * @param cexusCmp
 	 * @return 关系运算符 columnVal
 	 */
-	private static String buildWhereNode(NexusCmp cexusCmp, ColumnField fmi, Object srcVal) {
+	private static String buildWhereNode(NexusCmp cexusCmp, SmartColumnInfo fmi, Object srcVal) {
 		if (srcVal == null) {
 			return null;
 		}
+		boolean isString = srcVal instanceof String;
 		String columnVal = null;
-		if ((cexusCmp == NexusCmp.IN || cexusCmp == NexusCmp.NOT_IN) && srcVal instanceof String) {
+		if (isString && srcVal.toString().length() == 0) {
+			return null;
+		}
+		if ((cexusCmp == NexusCmp.IN || cexusCmp == NexusCmp.NOT_IN) && isString) {
 			columnVal = srcVal.toString();
 		} else if (fmi != null) {// 。对象传值
 			columnVal = MapperSqlTool.buildColumnVal(srcVal, fmi, null);
@@ -131,10 +135,10 @@ class MapperSqlTool {
 		return columnVal;
 	}
 
-	static String getColumns(TableClass tableClass) {
+	static String getColumns(SmartTableInfo tableClass) {
 		StringBuilder cls = new StringBuilder();
 		String clsStr = null;
-		tableClass.fieldsMapperMap.forEach((k, v) -> {
+		tableClass.smartColumnInfoMap.forEach((k, v) -> {
 			cls.append(k).append(SqlKwd.AS).append(v.getField().getName()).append(",");
 		});
 		if (cls.length() > 0) {
@@ -145,7 +149,7 @@ class MapperSqlTool {
 
 	/**
 	 * 构建column值：<br>
-	 * 1、如果是java.util.Date类型，而且在@ColumnInfo注解配置了dateFormart则按dateFormart格式化<br>
+	 * 1、如果是java.util.Date类型，而且在@SmartColumn注解配置了dateFormart则按dateFormart格式化<br>
 	 * 2、如果是java.util.Date类型，但是没有配置dateFormart；如果是String类型， 则让mybatis解析（用#{}包裹）<br>
 	 * 2、不是1和2的情况直接toString<br>
 	 * 
@@ -196,8 +200,9 @@ class MapperSqlTool {
 
 	/**
 	 * 构建column值：<br>
-	 * 1、如果是java.util.Date类型，而且在@ColumnInfo注解配置了dateFormart则按dateFormart格式化<br>
-	 * 2、如果是java.util.Date类型，但是没有配置dateFormart；如果是String类型， 则让mybatis解析（用#{}包裹）<br>
+	 * 1、如果是java.util.Date或者java.time.temporal.TemporalAccessor，<br>
+	 * &nbsp;&nbsp;1.1而且在@SmartColumn注解配置了dateFormart则按dateFormart格式化<br>
+	 * &nbsp;&nbsp;1.2但是没有在@SmartColumn配置dateFormart；如果是String类型， 则让mybatis解析（用#{}包裹）<br>
 	 * 2、不是1和2的情况直接toString<br>
 	 * 
 	 * @param srcVal 原始值
@@ -206,13 +211,13 @@ class MapperSqlTool {
 	 * @return 返回column值
 	 * @throws IllegalAccessException
 	 */
-	static String buildColumnVal(Object srcVal, ColumnField fmi, Integer index) {
+	static String buildColumnVal(Object srcVal, SmartColumnInfo fmi, Integer index) {
 		if (srcVal == null) {
 			return null;
 		}
 		String columnVal = null;
 		Field fi = fmi.getField();
-		ColumnInfo columInfo = fmi.getColumnInfo();
+		SmartColumn columInfo = fmi.getSmartColumn();
 		Class<?> fieldType = fi.getType();
 		if (columInfo != null && columInfo.dateFormart().length() > 0) {
 			if (srcVal instanceof Date) {
@@ -248,7 +253,7 @@ class MapperSqlTool {
 	 * @param rowObj
 	 * @return
 	 */
-	static String generateIdIfIdFieldAndDftIdtactic(Field field, Object rowObj, TableInfo tableInfo) {
+	static String generateIdIfIdFieldAndDftIdtactic(Field field, Object rowObj, SmartTable tableInfo) {
 		String idVal = null;
 		if (field.getName().equals(tableInfo.idFieldName()) && tableInfo.idtactics() == IdtacticsEnum.DFT) {
 			idVal = SequenceGenerate.nexId(tableInfo.value());

@@ -50,7 +50,7 @@ public class WhereNode {
 	public WhereNode(LogicCmp logicCmp, String columnName, NexusCmp nexusCmp, Object val, boolean isStatementVal) {
 		this.logicCmp = logicCmp;
 		this.nexusCmp = nexusCmp;
-		this.columnName = columnName;
+		this.columnName = columnName; 
 		this.val = val;
 		this.isStatementVal = isStatementVal;
 	}

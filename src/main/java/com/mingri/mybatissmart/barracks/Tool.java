@@ -42,5 +42,9 @@ public class Tool {
 	}
 
 	
+	public static String unifiedColumnName(String columnName) {
+		return columnName.toLowerCase();
+	}
+	
 	
 }

@@ -1,6 +1,10 @@
 package com.mingri.mybatissmart;
 
+import java.util.Map;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
+
+import com.mingri.mybatissmart.barracks.SqlPrint;
 
 /**
  * 配置属性类
@@ -11,30 +15,31 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class MybatisSmartProperties {
 	static final String MYBATIS_SMART_PREFIX = "mybatis-smart";
 
-	/**
-	 * 表映射实体扫描包
-	 */
-	private String modelPackage;
 
 	/**
-	 * 数据库方言,目前支持：mysql,sqlserver
+	 * 表映射实体扫描包:key:包，value:sessionFactory的beanName
 	 */
-	private String dialect;
-
-	public String getModelPackage() {
-		return modelPackage;
+	private Map<String, String> tablePackages;
+	private SqlPrint sqlPrint;
+	
+	public Map<String, String> getTablePackages() {
+		return tablePackages;
 	}
 
-	public void setModelPackage(String modelPackage) {
-		this.modelPackage = modelPackage;
+	public void setTablePackages(Map<String, String> tablePackages) {
+		this.tablePackages = tablePackages;
 	}
 
-	public String getDialect() {
-		return dialect;
+	public SqlPrint getSqlPrint() {
+		return sqlPrint;
 	}
 
-	public void setDialect(String dialect) {
-		this.dialect = dialect;
+	public void setSqlPrint(SqlPrint sqlPrint) {
+		this.sqlPrint = sqlPrint;
 	}
+
+
+
+
 
 }

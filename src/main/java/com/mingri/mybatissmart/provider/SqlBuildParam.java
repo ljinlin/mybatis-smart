@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import com.mingri.mybatissmart.MybatisSmartContext;
 import com.mingri.mybatissmart.barracks.Constant;
-import com.mingri.mybatissmart.dbo.TableClass;
+import com.mingri.mybatissmart.dbo.SmartTableInfo;
 
 /**
  *  mapper sql构建所需要的参数类
@@ -21,7 +21,7 @@ public class SqlBuildParam {
 
 	private Class<?> clazz;
 	private Object param;
-	private TableClass cmi;
+	private SmartTableInfo smti;
 
 	public Class<?> getClazz() {
 		return clazz;
@@ -39,12 +39,12 @@ public class SqlBuildParam {
 		this.param = param;
 	}
 
-	public TableClass getCmi() {
-		return cmi;
+	public SmartTableInfo getSmti() {
+		return smti;
 	}
 
-	public void setCmi(TableClass cmi) {
-		this.cmi = cmi;
+	public void setSmti(SmartTableInfo smti) {
+		this.smti = smti;
 	}
 
 	private SqlBuildParam() {
@@ -90,9 +90,9 @@ public class SqlBuildParam {
 					}
 				}
 			}
-			TableClass cmi = MybatisSmartContext.getClassMapperInfo(this.clazz);
+			SmartTableInfo smti = MybatisSmartContext.getSmartTableInfo(this.clazz);
 			paramWrapper.setClazz(this.clazz);
-			paramWrapper.setCmi(cmi);
+			paramWrapper.setSmti(smti);
 			paramWrapper.setParam(param);
 		}
 

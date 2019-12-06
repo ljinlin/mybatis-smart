@@ -17,7 +17,7 @@ import com.mingri.langhuan.cabinet.constant.ObjTypeEnum;
 @Target({ ElementType.FIELD })
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-public @interface ColumnInfo {
+public @interface SmartColumn {
 
 	/**
 	 * 列名<br>
