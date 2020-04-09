@@ -8,6 +8,6 @@ import com.mingri.mybatissmart.provider.MapperSqlProvider;
 
 public interface InsertSmartMapper<E>{
 	
-	@InsertProvider(method = "insert", type = MapperSqlProvider.class)
+	@InsertProvider(method = Constant.INSERT_METHOD, type = MapperSqlProvider.class)
 	int insert(@Param(Constant.PARAM_KEY) Object e);
 }

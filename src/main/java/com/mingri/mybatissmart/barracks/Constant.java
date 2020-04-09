@@ -6,6 +6,10 @@ public interface Constant {
 	 *    Mapper 实体类参数（表映射类）名称
 	 */
 	static final String PARAM_KEY = "ek";
+	/**
+	 *    Mapper insert函数名称
+	 */
+	static final String INSERT_METHOD = "insert";
 	
 	/**
 	 *  Mapper where参数名称

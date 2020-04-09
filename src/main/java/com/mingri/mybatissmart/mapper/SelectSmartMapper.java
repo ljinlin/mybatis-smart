@@ -13,7 +13,7 @@ import com.mingri.mybatissmart.provider.MapperSqlProvider;
  *  只读
  * @author ljl
  *
- * @param <E>
+ * @param <E> 实体类
  */
 public interface SelectSmartMapper<E>{
 	
