@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import com.mingri.mybatissmart.MybatisSmartContext;
 import com.mingri.mybatissmart.barracks.Constant;
 import com.mingri.mybatissmart.barracks.SqlPrint;
+import com.mingri.mybatissmart.dbo.SetSql;
 import com.mingri.mybatissmart.dbo.SmartTableInfo;
 import com.mingri.mybatissmart.dbo.Where;
 
@@ -72,7 +73,7 @@ public class MapperSqlProvider {
 		}
 		return sql;
 	}
-	public String insert(@Param(Constant.PARAM_KEY) Object obj) {
+	public String inserts(@Param(Constant.PARAM_KEY) Object obj) {
 		SqlBuildParam paramWrapper=new SqlBuildParam.Builder(obj).build();
 		SmartTableInfo smti = paramWrapper.getSmti();
 		String sql = null;
@@ -90,6 +91,18 @@ public class MapperSqlProvider {
 		String sql = null;
 		try {
 			sql = smti.getUpdateByIdSql(paramWrapper.getParam());
+			SqlPrint.instance().print(LOGGER,sql);
+		} catch (Exception e) {
+			LOGGER.error("sql构建异常:", e);
+		}
+		return sql;
+	}
+	public String updateBySets(@Param(Constant.PARAM_KEY) Object obj, @Param(Constant.COND_KEY) Where where) {
+		SqlBuildParam paramWrapper=new SqlBuildParam.Builder(obj).build();
+		SmartTableInfo smti = paramWrapper.getSmti();
+		String sql = null;
+		try {
+			sql = smti.getUpdateBySetSAndWhereSql((SetSql)paramWrapper.getParam(),where);
 			SqlPrint.instance().print(LOGGER,sql);
 		} catch (Exception e) {
 			LOGGER.error("sql构建异常:", e);

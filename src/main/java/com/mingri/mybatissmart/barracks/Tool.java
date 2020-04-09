@@ -2,6 +2,9 @@ package com.mingri.mybatissmart.barracks;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
+
+import org.apache.ibatis.binding.MapperMethod.ParamMap;
 
 import com.mingri.mybatissmart.MybatisSmartException;
 
@@ -41,10 +44,19 @@ public class Tool {
 		throw new MybatisSmartException("MybatisSmart无法解析出数据库方言，请配置数据库方言");
 	}
 
-	
 	public static String unifiedColumnName(String columnName) {
 		return columnName.toLowerCase();
 	}
-	
-	
+
+	public static Class<?> getClassByParam(Object parameter) {
+		if (parameter instanceof ParamMap) {
+			Object enParam = ((ParamMap<?>) parameter).get(Constant.PARAM_KEY);
+			if (enParam == null) {
+				return null;
+			}
+			return enParam instanceof List ? (((List<?>) enParam).get(0).getClass()) : enParam.getClass();
+		}
+		return null;
+	}
+
 }

@@ -12,6 +12,7 @@ import com.mingri.mybatissmart.barracks.IdtacticsEnum;
 
 /**
  * 数据库表信息
+ * 
  * @author ljl
  *
  */
@@ -21,12 +22,16 @@ import com.mingri.mybatissmart.barracks.IdtacticsEnum;
 public @interface SmartTable {
 
 	/**
-	 *  表名
+	 * 表名
+	 * 
+	 * @return 表名
 	 */
 	String value() default "";
-	
+
 	/**
-	 *  表名
+	 * 表名
+	 * 
+	 * @return 表名
 	 */
 	@AliasFor("value")
 	String name() default "";
@@ -34,17 +39,21 @@ public @interface SmartTable {
 	/**
 	 * 
 	 * 表别名
+	 * 
+	 * @return 表别名
 	 */
 	String alias() default "";
-	
+
 	/**
 	 * id生成策略
+	 * 
 	 * @return id生成策略枚举
 	 */
 	IdtacticsEnum idtactics() default IdtacticsEnum.DFT;
 
 	/**
 	 * id列对应的字段名称
+	 * 
 	 * @return id字段
 	 */
 	String idFieldName() default "id";

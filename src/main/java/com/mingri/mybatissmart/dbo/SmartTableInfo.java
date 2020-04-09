@@ -8,6 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,13 +33,14 @@ public class SmartTableInfo {
 	LinkedHashMap<String, SmartColumnInfo> smartColumnInfoMap;// key:columnName
 	private DialectEnum dialect;
 	private SqlSessionFactory sqlSessionFactory;
+	private String[] keyProperties;
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(SmartTable.class);
 
 	public Field getIdField() {
 		return idField;
 	}
- 
+
 	public void setIdField(Field idField) {
 		this.idField = idField;
 	}
@@ -178,6 +180,16 @@ public class SmartTableInfo {
 		return getUpdateByWhereSql(obj, where);
 	}
 
+
+	public String getUpdateBySetSAndWhereSql(SetSql sets, Where where) throws Exception {
+		WhereSql whereSql = MapperSqlTool.buildWhere(null, where, this);
+		if (whereSql == null || whereSql.isEmpty()) {
+			throw new MybatisSmartException("必须设置where条件");
+		}
+		MapperSql.Update updateSql = MapperSql.update(smartTable.value(),sets);
+		return updateSql.setWhere(whereSql).build().toString();
+	}
+	
 	public String getUpdateByWhereSql(Object obj, Where where) throws Exception {
 		SmartColumn columnInfo = null;
 		String colmVal = null;
@@ -286,7 +298,7 @@ public class SmartTableInfo {
 			}
 			if (StrTool.isEmpty(smartTableInfo.getIdColumnName())) {
 				throw new MybatisSmartException(StrTool.concat(smartTableInfo.clazz.getCanonicalName(), " @",
-						SmartTable.class.getSimpleName(), " 配置有误：", "表中没有对应的主键").toString());
+						SmartTable.class.getSimpleName(), " 配置有误：默认配置idFieldName值是\"id\",", "表中没有\"id\"列，请正确配置idFieldName").toString());
 			}
 			return smartTableInfo;
 		}
@@ -302,5 +314,33 @@ public class SmartTableInfo {
 			}
 		}
 
+	}
+
+	private static final Object MODIFYKEYPROPERTIES_LOCK=new Object();
+	public void modifyKeyProperties(MappedStatement ms) {
+		if (keyProperties != null) {
+			return;
+		}
+		final String[] keyProperties2 = ms.getKeyProperties();
+ 		if (keyProperties2 == null) {
+			LOGGER.warn("keyProperties is  null");
+			return;
+		}
+		int len = keyProperties2.length;
+		if (len == 0) {
+			LOGGER.warn("keyProperties is  empty");
+		}
+		len = len == 0 ? 1 : len;
+		synchronized (MODIFYKEYPROPERTIES_LOCK) {
+			if (keyProperties != null) {
+				return;
+			}
+			keyProperties = new String[len];
+			for (int i = 0; i < keyProperties.length; i++) {
+				keyProperties[i] = this.idField.getName();
+				keyProperties2[i] = keyProperties[i];
+			}
+
+		}
 	}
 }

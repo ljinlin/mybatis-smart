@@ -1,14 +1,20 @@
 package com.mingri.mybatissmart.dbo;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.mingri.langhuan.cabinet.constant.LogicCmp;
 import com.mingri.langhuan.cabinet.constant.NexusCmp;
+import com.mingri.langhuan.cabinet.constant.ValTypeEnum;
 import com.mingri.langhuan.cabinet.tool.StrTool;
+import com.mingri.mybatissmart.MybatisSmartException;
 import com.mingri.mybatissmart.barracks.Constant;
 import com.mingri.mybatissmart.barracks.DialectEnum;
 import com.mingri.mybatissmart.barracks.SqlKwd;
+import com.mingri.mybatissmart.provider.MapperSqlProvider;
 
 class MapperSql {
-
+	private static final Logger LOGGER = LoggerFactory.getLogger(MapperSql.class);
 	private StringBuilder statementSql = new StringBuilder();
 
 	private MapperSql() {
@@ -149,6 +155,15 @@ class MapperSql {
 		private StringBuilder sets = new StringBuilder();
 		private WhereSql where = null;
 
+		Update(String table,SetSql setSql) {
+			statementSql.append(SqlKwd.UPDATE).append(table).append(SqlKwd.SET);
+			setSql.getSets().forEach((k,v)->{
+				if(setSql.isSetEmpty()||StrTool.checkNotEmpty(v)) {
+					this.set(k, StrTool.concat("#{",Constant.PARAM_KEY,".sets.",k));
+				}
+			});
+		}
+
 		Update(String table) {
 			statementSql.append(SqlKwd.UPDATE).append(table).append(SqlKwd.SET);
 		}
@@ -164,6 +179,9 @@ class MapperSql {
 		}
 
 		MapperSql build() {
+			if(sets.length()==0) {
+				throw new MybatisSmartException("update必须要有set语句段");
+			}
 			statementSql.append(sets.substring(0, sets.length() - 1));
 			if (where != null) {
 				statementSql.append(where.build());
@@ -248,6 +266,9 @@ class MapperSql {
 
 	static Update update(String table) {
 		return new MapperSql().new Update(table);
+	}
+	static Update update(String table,SetSql sets) {
+		return new MapperSql().new Update(table,sets);
 	}
 
 	static Select select(String columns, String table) {

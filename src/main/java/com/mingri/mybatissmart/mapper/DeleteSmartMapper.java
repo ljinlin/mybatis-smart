@@ -13,7 +13,7 @@ public interface DeleteSmartMapper<E>{
 	int deleteById(Object idV, Class<?> cl);
 
 	@DeleteProvider(method = "delete", type = MapperSqlProvider.class)
-	int deleteByObjAndWere(@Param(Constant.PARAM_KEY) Object e,
+	int deleteByObjAndWhere(@Param(Constant.PARAM_KEY) Object e,
 			@Param(Constant.COND_KEY) Where filterSqlBuild);
 
 	@DeleteProvider(method = "delete", type = MapperSqlProvider.class)

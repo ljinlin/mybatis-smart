@@ -1,6 +1,8 @@
 package com.mingri.mybatissmart;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -8,6 +10,7 @@ import java.util.Map.Entry;
 
 import javax.sql.DataSource;
 
+import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.mybatis.spring.SqlSessionFactoryBean;
 import org.mybatis.spring.boot.autoconfigure.MybatisAutoConfiguration;
@@ -21,6 +24,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.util.Assert;
 
+import com.mingri.langhuan.cabinet.tool.ClassTool;
 import com.mingri.langhuan.cabinet.tool.StrTool;
 
 //@ConditionalOnClass(value = { SqlSessionFactory.class })
@@ -48,6 +52,9 @@ public class MybatisSmartAutoConfiguration {
 	private List<MybatisSmartConfiguration> buildConfigurations() {
 		SqlSessionFactory sqlSessionFactory = null;
 		Map<String, String> tablePackages = mybatisSmartProperties.getTablePackages();
+		if(tablePackages==null||tablePackages.isEmpty()) {
+			return Collections.emptyList();
+		}
 		List<MybatisSmartConfiguration> configurations = new ArrayList<>();
 		Map<String, String> tablePackageMap = new HashMap<>();
 		tablePackages.forEach((tablePackagesStr, sqlSessionFactoryBeanName) -> {
