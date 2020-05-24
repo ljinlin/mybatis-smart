@@ -18,7 +18,7 @@ public interface UpdateSmartMapper<E>{
 			@Param(Constant.COND_KEY) Where filterSqlBuild);
 	
 	@UpdateProvider(method = "updateBySets", type = MapperSqlProvider.class)
-	int updateBySets(@Param(Constant.PARAM_KEY) SetSql sets,
+	int updateBySets(@Param(Constant.TABLE_KEY) Class<E> clazz,@Param(Constant.PARAM_KEY) SetSql sets,
 			@Param(Constant.COND_KEY) Where filterSqlBuild);
 
 }

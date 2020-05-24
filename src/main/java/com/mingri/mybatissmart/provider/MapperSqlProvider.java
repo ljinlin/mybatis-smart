@@ -97,8 +97,8 @@ public class MapperSqlProvider {
 		}
 		return sql;
 	}
-	public String updateBySets(@Param(Constant.PARAM_KEY) Object obj, @Param(Constant.COND_KEY) Where where) {
-		SqlBuildParam paramWrapper=new SqlBuildParam.Builder(obj).build();
+	public String updateBySets(@Param(Constant.TABLE_KEY) Class<?> tableClazz,@Param(Constant.PARAM_KEY) Object obj, @Param(Constant.COND_KEY) Where where) {
+		SqlBuildParam paramWrapper=new SqlBuildParam.Builder(obj).setClazz(tableClazz).build();
 		SmartTableInfo smti = paramWrapper.getSmti();
 		String sql = null;
 		try {

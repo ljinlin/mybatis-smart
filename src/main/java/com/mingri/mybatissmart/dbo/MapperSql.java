@@ -159,7 +159,7 @@ class MapperSql {
 			statementSql.append(SqlKwd.UPDATE).append(table).append(SqlKwd.SET);
 			setSql.getSets().forEach((k,v)->{
 				if(setSql.isSetEmpty()||StrTool.checkNotEmpty(v)) {
-					this.set(k, StrTool.concat("#{",Constant.PARAM_KEY,".sets.",k));
+					this.set(k, StrTool.concat("#{",Constant.PARAM_KEY,".sets.",k,"}"));
 				}
 			});
 		}

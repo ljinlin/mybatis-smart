@@ -182,7 +182,7 @@ public class SmartTableInfo {
 
 
 	public String getUpdateBySetSAndWhereSql(SetSql sets, Where where) throws Exception {
-		WhereSql whereSql = MapperSqlTool.buildWhere(null, where, this);
+		WhereSql whereSql = MapperSqlTool.buildWhere(sets, where, this);
 		if (whereSql == null || whereSql.isEmpty()) {
 			throw new MybatisSmartException("必须设置where条件");
 		}

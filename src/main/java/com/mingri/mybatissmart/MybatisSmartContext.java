@@ -163,6 +163,10 @@ public class MybatisSmartContext {
 		validSmartTable(tableInfo);
 
 		Map<String, String> fieldAndColumnName = getFieldAndColumnNameMap(tableInfo.value(), sqlSessionFactory);
+		if(fieldAndColumnName==null||fieldAndColumnName.isEmpty()) {
+			LOGGER.warn("---------------扫描警告：{} 没有映射表",smartTableClass);
+			return null;
+		}
 		List<Field> fieldList = ClassTool.getDecararedFields(smartTableClass, false);
 		LinkedHashMap<String, SmartColumnInfo> columnFieldMap = new LinkedHashMap<>();
 
@@ -233,6 +237,9 @@ public class MybatisSmartContext {
 							}
 							LinkedHashMap<String, SmartColumnInfo> smartColumnInfoMap = mappingSmartTable(
 									smartTableClazz, sqlSessionFactory);
+							if(smartColumnInfoMap==null) {
+								continue;
+							}
 							DialectEnum dialectEnum = getDialect(sqlSessionFactory);
 							if (dialectEnum != null) {
 								dialect = dialectEnum;
