@@ -37,6 +37,7 @@ import com.mingri.mybatissmart.barracks.IdtacticsEnum;
 import com.mingri.mybatissmart.barracks.Tool;
 import com.mingri.mybatissmart.dbo.SmartColumnInfo;
 import com.mingri.mybatissmart.dbo.SmartTableInfo;
+import com.mingri.mybatissmart.mapper.InsertSmartMapper;
 import com.mingri.mybatissmart.mapper.InternalMapper;
 import com.mingri.mybatissmart.mapper.SmartMapper;
 
@@ -163,8 +164,8 @@ public class MybatisSmartContext {
 		validSmartTable(tableInfo);
 
 		Map<String, String> fieldAndColumnName = getFieldAndColumnNameMap(tableInfo.value(), sqlSessionFactory);
-		if(fieldAndColumnName==null||fieldAndColumnName.isEmpty()) {
-			LOGGER.warn("---------------扫描警告：{} 没有映射表",smartTableClass);
+		if (fieldAndColumnName == null || fieldAndColumnName.isEmpty()) {
+			LOGGER.warn("---------------扫描警告：{} 没有映射表", smartTableClass);
 			return null;
 		}
 		List<Field> fieldList = ClassTool.getDecararedFields(smartTableClass, false);
@@ -237,7 +238,7 @@ public class MybatisSmartContext {
 							}
 							LinkedHashMap<String, SmartColumnInfo> smartColumnInfoMap = mappingSmartTable(
 									smartTableClazz, sqlSessionFactory);
-							if(smartColumnInfoMap==null) {
+							if (smartColumnInfoMap == null) {
 								continue;
 							}
 							DialectEnum dialectEnum = getDialect(sqlSessionFactory);
@@ -292,6 +293,11 @@ public class MybatisSmartContext {
 		return columnsCamel;
 	}
 
+	/**
+	 * 更换id生成器
+	 * 
+	 * @author jinlin Li
+	 */
 	private void replaceKeyGenerator() {
 		if (SMART_TABLE_MAP.isEmpty()) {
 			return;
@@ -325,14 +331,18 @@ public class MybatisSmartContext {
 					resource = annotatedType.getType().getTypeName();
 
 					index = resource.indexOf(SmartMapper.class.getName());
+					Class<?> parentMapper = SmartMapper.class;
 					if (index == -1) {
-						continue;
+						index = resource.indexOf(InsertSmartMapper.class.getName());
+						if (index == -1) {
+							parentMapper = InsertSmartMapper.class;
+							continue;
+						}
 					}
 					isSmartSubMapper = true;
 					Class<?> tableClazz = null;
 					try {
-						resource = resource.substring(SmartMapper.class.getName().length() + 1, resource.length() - 1);
-
+						resource = resource.substring(parentMapper.getName().length() + 1, resource.length() - 1);
 						tableClazz = Class.forName(resource);
 
 						SmartTableInfo smtb = getSmartTableInfo(tableClazz);
