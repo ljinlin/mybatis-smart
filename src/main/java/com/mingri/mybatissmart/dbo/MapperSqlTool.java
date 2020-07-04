@@ -9,13 +9,13 @@ import java.util.Date;
 import java.util.List;
 
 import com.alibaba.fastjson.JSONArray;
-import com.mingri.langhuan.cabinet.algorithm.SequenceGenerate;
 import com.mingri.langhuan.cabinet.constant.LogicCmp;
 import com.mingri.langhuan.cabinet.constant.NexusCmp;
 import com.mingri.langhuan.cabinet.constant.ValTypeEnum;
 import com.mingri.langhuan.cabinet.tool.ClassTool;
 import com.mingri.langhuan.cabinet.tool.CollectionTool;
 import com.mingri.langhuan.cabinet.tool.StrTool;
+import com.mingri.mybatissmart.MybatisSmartContext;
 import com.mingri.mybatissmart.annotation.SmartColumn;
 import com.mingri.mybatissmart.annotation.SmartTable;
 import com.mingri.mybatissmart.barracks.Constant;
@@ -32,7 +32,7 @@ class MapperSqlTool {
 		if (where == null || CollectionTool.isEmpty(nodes)) {
 			return null;
 		}
- 
+
 		MapperSql.WhereSql whereSql = MapperSql.where();
 		if (obj != null) {
 			MapperSqlTool.buildWhere(obj, nodes, tableClass, whereSql);
@@ -202,7 +202,8 @@ class MapperSqlTool {
 	 * 构建column值：<br>
 	 * 1、如果是java.util.Date或者java.time.temporal.TemporalAccessor，<br>
 	 * &nbsp;&nbsp;1.1而且在@SmartColumn注解配置了dateFormart则按dateFormart格式化<br>
-	 * &nbsp;&nbsp;1.2但是没有在@SmartColumn配置dateFormart；如果是String类型， 则让mybatis解析（用#{}包裹）<br>
+	 * &nbsp;&nbsp;1.2但是没有在@SmartColumn配置dateFormart；如果是String类型，
+	 * 则让mybatis解析（用#{}包裹）<br>
 	 * 2、不是1和2的情况直接toString<br>
 	 * 
 	 * @param srcVal 原始值
@@ -256,7 +257,7 @@ class MapperSqlTool {
 	static String generateIdIfIdFieldAndDftIdtactic(Field field, Object rowObj, SmartTable tableInfo) {
 		String idVal = null;
 		if (field.getName().equals(tableInfo.idFieldName()) && tableInfo.idtactics() == IdtacticsEnum.DFT) {
-			idVal = SequenceGenerate.nexId(tableInfo.value());
+			idVal = MybatisSmartContext.getSequenceGenerate().nexId(tableInfo.value());
 			MapperSqlTool.injectIdVal(field, rowObj, idVal);
 		}
 		return idVal;

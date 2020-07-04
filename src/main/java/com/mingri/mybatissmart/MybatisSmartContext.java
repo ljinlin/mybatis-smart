@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.util.StringUtils;
 
+import com.mingri.langhuan.cabinet.algorithm.SequenceGenerate;
 import com.mingri.langhuan.cabinet.constant.FileSufx;
 import com.mingri.langhuan.cabinet.tool.ClassTool;
 import com.mingri.langhuan.cabinet.tool.FileTool;
@@ -42,7 +43,7 @@ import com.mingri.mybatissmart.mapper.InternalMapper;
 import com.mingri.mybatissmart.mapper.SmartMapper;
 
 /**
- * mybatis-smart 上下文
+ * mybatis-smart 上下文,单例的
  * 
  * @author ljl 2019年11月30日
  */
@@ -51,6 +52,19 @@ public class MybatisSmartContext {
 	private final static Logger LOGGER = LoggerFactory.getLogger(MybatisSmartContext.class);
 
 	private List<MybatisSmartConfiguration> configurations;
+
+	private static SequenceGenerate sequenceGenerate;
+
+	public static SequenceGenerate getSequenceGenerate() {
+		if (sequenceGenerate == null) {
+			sequenceGenerate = SequenceGenerate.getInstance();
+		}
+		return sequenceGenerate;
+	}
+
+	public void setSequenceGenerate(SequenceGenerate sequenceGenerate) {
+		MybatisSmartContext.sequenceGenerate = sequenceGenerate;
+	}
 
 	public List<MybatisSmartConfiguration> getConfigurations() {
 		return configurations;
