@@ -27,6 +27,7 @@ import org.springframework.util.StringUtils;
 
 import com.mingri.langhuan.cabinet.algorithm.SequenceGenerate;
 import com.mingri.langhuan.cabinet.constant.FileSufx;
+import com.mingri.langhuan.cabinet.interfac.Assert;
 import com.mingri.langhuan.cabinet.tool.ClassTool;
 import com.mingri.langhuan.cabinet.tool.FileTool;
 import com.mingri.langhuan.cabinet.tool.StrTool;
@@ -152,7 +153,8 @@ public class MybatisSmartContext {
 
 	private void validSmartTable(SmartTable tableInfo) {
 		String idFieldName = tableInfo.idFieldName();
-		if (tableInfo.value().length() == 0) {
+		String tableName=Tool.getTableName(tableInfo);
+		if (tableName.isEmpty()) {
 			throw new MybatisSmartException(SmartTable.class.getCanonicalName() + " 的value 不能为空");
 		}
 
@@ -176,12 +178,14 @@ public class MybatisSmartContext {
 			return null;
 		}
 		validSmartTable(tableInfo);
-
-		Map<String, String> fieldAndColumnName = getFieldAndColumnNameMap(tableInfo.value(), sqlSessionFactory);
-		if (fieldAndColumnName == null || fieldAndColumnName.isEmpty()) {
+		String tableName=Tool.getTableName(tableInfo);
+		Map<String, String> fieldColNameDbMap = getFieldAndColumnNameMap(tableName, sqlSessionFactory);
+		
+		if (fieldColNameDbMap == null || fieldColNameDbMap.isEmpty()) {
 			LOGGER.warn("---------------扫描警告：{} 没有映射表", smartTableClass);
 			return null;
 		}
+		
 		List<Field> fieldList = ClassTool.getDecararedFields(smartTableClass, false);
 		LinkedHashMap<String, SmartColumnInfo> columnFieldMap = new LinkedHashMap<>();
 
@@ -190,20 +194,22 @@ public class MybatisSmartContext {
 			SmartColumn columnInfo = field.getAnnotation(SmartColumn.class);
 			String columnName = columnInfo == null ? StrTool.EMPTY
 					: Tool.unifiedColumnName(StrTool.toString(columnInfo.value()));
+			
 			if (columnName.isEmpty()) {
 				// 。根据驼峰规则自动映射
-				columnName = fieldAndColumnName.get(field.getName());
+				columnName = fieldColNameDbMap.get(field.getName());
 				if (columnName == null) {
 					// 。 该字段没有映射的列
 					continue;
 				}
 			} else {
 				// 。根据注解配置映射
-				if (!fieldAndColumnName.containsValue(columnName)) {
+				if (!fieldColNameDbMap.containsValue(columnName)) {
 					throw new MybatisSmartException(
-							StrTool.concat(tableInfo.value(), " 表中没有字段:", columnName).toString());
+							StrTool.concat(tableName, " 表中没有字段:", columnName).toString());
 				}
 			}
+			
 			SmartColumnInfo smci = columnFieldMap.get(columnName);
 			if (smci == null) {
 				columnFieldMap.put(columnName, new SmartColumnInfo(field, columnInfo));
@@ -295,14 +301,15 @@ public class MybatisSmartContext {
 	 * 获取java字段名称和数据库字段名称
 	 * 
 	 * @param tableName 表名
-	 * @return key:fieldName val:columnName
+	 * @return key:fieldName(columnName转驼峰后的name) val:columnName（大写）
 	 */
 	private Map<String, String> getFieldAndColumnNameMap(String tableName, SqlSessionFactory sqlSessionFactory) {
 		List<String> columns = selectColumns(tableName, sqlSessionFactory);
 		Map<String, String> columnsCamel = new HashMap<>();
 		columns.forEach(column -> {
 			String columnName = Tool.unifiedColumnName(column);
-			columnsCamel.put(StrTool.camel(columnName), columnName);
+			String fieldName =StrTool.camel(columnName);
+			columnsCamel.put(fieldName, columnName);
 		});
 		return columnsCamel;
 	}

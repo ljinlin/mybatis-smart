@@ -20,7 +20,24 @@ public class MapperSqlProvider {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MapperSqlProvider.class);
 
+	
 	public String select(@Param(Constant.PARAM_KEY) Object obj, @Param(Constant.COND_KEY) Where where) {
+		
+		RuntimeException st=new RuntimeException();
+		StackTraceElement[] st0=st.getStackTrace();
+		for (StackTraceElement e : st0) {
+			if(e.getMethodName().equals("selectByWhere")) {
+				try {
+					Class<?> cl=Class.forName(e.getClassName());
+					Class<?> cl2=cl.getSuperclass();
+					System.out.println(cl);
+				} catch (ClassNotFoundException e1) {
+					e1.printStackTrace();
+				}
+			}
+		}
+			System.out.println(st);
+		
 		SqlBuildParam paramWrapper=new SqlBuildParam.Builder(obj).build();
 		SmartTableInfo smti = paramWrapper.getSmti();
 		String sql = null;
