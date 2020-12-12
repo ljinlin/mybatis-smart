@@ -10,13 +10,12 @@ import com.mingri.mybatissmart.provider.MapperSqlProvider;
 public interface DeleteSmartMapper<E>{
 	
 	@DeleteProvider(method = "deleteById", type = MapperSqlProvider.class)
-	int deleteById(Object idV, Class<?> cl);
+	int deleteById(Object idV);
 
 	@DeleteProvider(method = "delete", type = MapperSqlProvider.class)
 	int deleteByObjAndWhere(@Param(Constant.PARAM_KEY) Object e,
 			@Param(Constant.COND_KEY) Where filterSqlBuild);
 
 	@DeleteProvider(method = "delete", type = MapperSqlProvider.class)
-	int deleteByWhere(@Param(Constant.PARAM_KEY) Class<?> clazz,
-			@Param(Constant.COND_KEY) Where filterSqlBuild);
+	int deleteByWhere(@Param(Constant.COND_KEY) Where filterSqlBuild);
 }

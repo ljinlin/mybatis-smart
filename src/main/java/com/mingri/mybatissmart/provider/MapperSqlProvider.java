@@ -19,30 +19,23 @@ import com.mingri.mybatissmart.dbo.Where;
 public class MapperSqlProvider {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MapperSqlProvider.class);
-
 	
-	public String select(@Param(Constant.PARAM_KEY) Object obj, @Param(Constant.COND_KEY) Where where) {
-		
-		RuntimeException st=new RuntimeException();
-		StackTraceElement[] st0=st.getStackTrace();
-		for (StackTraceElement e : st0) {
-			if(e.getMethodName().equals("selectByWhere")) {
-				try {
-					Class<?> cl=Class.forName(e.getClassName());
-					Class<?> cl2=cl.getSuperclass();
-					System.out.println(cl);
-				} catch (ClassNotFoundException e1) {
-					e1.printStackTrace();
-				}
-			}
-		}
-			System.out.println(st);
-		
+	 static final ThreadLocal<Class<?>> MODEL=new ThreadLocal<>();
+	 static final ThreadLocal<String> MAPPER_ID=new ThreadLocal<>();
+	
+
+//	public String select(@Param(Constant.PARAM_KEY) Object obj, @Param(Constant.COND_KEY) Where where) {
+		public String select(Object obj) {
+			Class<?> cl=MODEL.get();
+			String ss=MAPPER_ID.get();
+			System.out.println(cl+"-----"+ss);
+			String sql = null;
+			try {
 		SqlBuildParam paramWrapper=new SqlBuildParam.Builder(obj).build();
 		SmartTableInfo smti = paramWrapper.getSmti();
-		String sql = null;
-		try {
-			sql = smti.getSelectByWhereSql(paramWrapper.getParam(), where);
+		Where filterSqlBuild=paramWrapper.getFilterSqlBuild();
+			smti = MybatisSmartContext.getSmartTableInfo(cl);
+			sql = smti.getSelectByWhereSql(paramWrapper.getParam(), filterSqlBuild);
 			SqlPrint.instance().print(LOGGER,sql);
 		} catch (Exception e) {
 			LOGGER.error("sql构建异常:", e);
@@ -50,8 +43,9 @@ public class MapperSqlProvider {
 		return sql;
 	}
 	
-	public String selectById(Object idV, Class<?> cl) {
+	public String selectById(Object idV) {
 		SmartTableInfo smti;
+		Class<?> cl=MODEL.get();
 		String sql = null;
 		try {
 			smti = MybatisSmartContext.getSmartTableInfo(cl);
@@ -63,12 +57,12 @@ public class MapperSqlProvider {
 		return sql;
 	}
 
-	public String count(@Param(Constant.PARAM_KEY) Object obj, @Param(Constant.COND_KEY) Where where) {
-		SqlBuildParam paramWrapper=new SqlBuildParam.Builder(obj).build();
-		SmartTableInfo smti = paramWrapper.getSmti();
+	public String count(Object obj,@Param(Constant.COND_KEY) Where where) {
 		String sql = null;
+		Class<?> cl=MODEL.get();
 		try {
-			sql = smti.getCountByWhereSql(paramWrapper.getParam(), where);
+			SmartTableInfo smti = MybatisSmartContext.getSmartTableInfo(cl);			
+			sql = smti.getCountByWhereSql(obj, where);
 			SqlPrint.instance().print(LOGGER,sql);
 		} catch (Exception e) {
 			LOGGER.error("sql构建异常:", e);

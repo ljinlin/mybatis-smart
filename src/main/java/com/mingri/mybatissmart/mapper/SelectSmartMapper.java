@@ -18,23 +18,22 @@ import com.mingri.mybatissmart.provider.MapperSqlProvider;
 public interface SelectSmartMapper<E>{
 	
 	@SelectProvider(method = "select", type = MapperSqlProvider.class)
-	List<E> selectByObjAndWhere(@Param(Constant.PARAM_KEY) E e, @Param(Constant.COND_KEY) Where filterSqlBuild);
+	List<E> selectByObjAndWhere(@Param(Constant.PARAM_KEY) E obj, @Param(Constant.COND_KEY) Where filterSqlBuild);
 
 	@SelectProvider(method = "select", type = MapperSqlProvider.class)
-	List<E> selectByWhere(@Param(Constant.PARAM_KEY) Class<E> clazz, @Param(Constant.COND_KEY) Where filterSqlBuild);
+	List<E> selectByWhere(@Param(Constant.COND_KEY) Where filterSqlBuild);
 
 	@SelectProvider(method = "select", type = MapperSqlProvider.class)
-	E selectOneByWhere(@Param(Constant.PARAM_KEY) Class<E> clazz, @Param(Constant.COND_KEY) Where filterSqlBuild);
+	E selectOneByWhere(@Param(Constant.COND_KEY) Where filterSqlBuild);
 
 	@SelectProvider(method = "selectById", type = MapperSqlProvider.class)
-	E selectById(Object idV, Class<E> cl);
+	E selectById(Object idV);
 	
 	@SelectProvider(method = "count", type = MapperSqlProvider.class)
-	int countByObjAndWhere(@Param(Constant.PARAM_KEY) Object e,
+	int countByObjAndWhere(@Param(Constant.PARAM_KEY) Object obj,
 			@Param(Constant.COND_KEY) Where filterSqlBuild);
 
 	@SelectProvider(method = "count", type = MapperSqlProvider.class)
-	int countByWhere(@Param(Constant.PARAM_KEY) Class<?> clazz,
-			@Param(Constant.COND_KEY) Where filterSqlBuild);
+	int countByWhere(@Param(Constant.COND_KEY) Where filterSqlBuild);
 
 }

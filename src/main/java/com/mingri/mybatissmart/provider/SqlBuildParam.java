@@ -1,7 +1,6 @@
 package com.mingri.mybatissmart.provider;
 
 import java.sql.SQLException;
-import java.util.List;
 
 import org.apache.ibatis.binding.MapperMethod.ParamMap;
 import org.slf4j.Logger;
@@ -10,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import com.mingri.mybatissmart.MybatisSmartContext;
 import com.mingri.mybatissmart.barracks.Constant;
 import com.mingri.mybatissmart.dbo.SmartTableInfo;
+import com.mingri.mybatissmart.dbo.Where;
 
 /**
  *  mapper sql构建所需要的参数类
@@ -21,6 +21,7 @@ public class SqlBuildParam {
 
 	private Class<?> clazz;
 	private Object param;
+	private  Where filterSqlBuild;
 	private SmartTableInfo smti;
 
 	public Class<?> getClazz() {
@@ -35,8 +36,12 @@ public class SqlBuildParam {
 		return param;
 	}
 
-	public void setParam(Object param) {
+	private void setParam(Object param) {
 		this.param = param;
+	}
+
+	private void setFilterSqlBuild(Where filterSqlBuild) {
+		this.filterSqlBuild = filterSqlBuild;
 	}
 
 	public SmartTableInfo getSmti() {
@@ -45,6 +50,10 @@ public class SqlBuildParam {
 
 	public void setSmti(SmartTableInfo smti) {
 		this.smti = smti;
+	}
+
+	public Where getFilterSqlBuild() {
+		return filterSqlBuild;
 	}
 
 	private SqlBuildParam() {
@@ -74,26 +83,22 @@ public class SqlBuildParam {
 		 */
 		private void construct(SqlBuildParam paramWrapper) throws SQLException {
 			Object param = null;
+			ParamMap<?> paramMap=null;
+			Where filterSqlBuild=null;
 			if (providerParam instanceof ParamMap) {
-				param = ((ParamMap<?>) providerParam).get(Constant.PARAM_KEY);
+				paramMap=(ParamMap<?>) providerParam;
+				param = paramMap.getOrDefault(Constant.PARAM_KEY,null);
+				filterSqlBuild = (Where)paramMap.getOrDefault(Constant.COND_KEY,null);
 			} else {
 				param = providerParam;
 			}
-			if (this.clazz == null) {
-				if (providerParam instanceof Class) {
-					this.clazz = ((Class<?>) providerParam);
-				} else {
-					if (param instanceof List) {
-						this.clazz = ((List<?>) param).get(0).getClass();
-					} else {
-						this.clazz = param.getClass();
-					}
-				}
-			}
+			
+			this.clazz=MapperSqlProvider.MODEL.get();
 			SmartTableInfo smti = MybatisSmartContext.getSmartTableInfo(this.clazz);
 			paramWrapper.setClazz(this.clazz);
 			paramWrapper.setSmti(smti);
 			paramWrapper.setParam(param);
+			paramWrapper.setFilterSqlBuild(filterSqlBuild);
 		}
 
 		public Builder(Object providerParam) {
