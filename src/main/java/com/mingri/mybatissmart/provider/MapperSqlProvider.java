@@ -1,9 +1,6 @@
 package com.mingri.mybatissmart.provider;
 
-import javax.annotation.Resource;
-
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.mapping.MappedStatement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,13 +21,8 @@ public class MapperSqlProvider {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MapperSqlProvider.class);
 	
-
-	
-	 @Resource
-	 private MappedStatement st;
 	 
-		public  String select(Object obj) {
-			System.err.println("============="+Thread.currentThread().getId()+"=====MapperSqlProvider---");
+		public static  String select(Object obj) {
 			Class<?> cl=SmartConfiguration.currentModel();
 			String sql = null;
 			try {
@@ -46,7 +38,7 @@ public class MapperSqlProvider {
 		return sql;
 	}
 	
-	public String selectById(Object idV) {
+	public static  String selectById(Object idV) {
 		SmartTableInfo smti;
 		Class<?> cl=SmartConfiguration.currentModel();
 		String sql = null;
@@ -60,7 +52,7 @@ public class MapperSqlProvider {
 		return sql;
 	}
 
-	public String count(Object obj,@Param(Constant.COND_KEY) Where where) {
+	public  static String count(Object obj,@Param(Constant.COND_KEY) Where where) {
 		String sql = null;
 		Class<?> cl=SmartConfiguration.currentModel();
 		try {
@@ -74,7 +66,7 @@ public class MapperSqlProvider {
 	}
 
 
-	public String delete(@Param(Constant.PARAM_KEY) Object obj, @Param(Constant.COND_KEY) Where where) {
+	public  static String delete(@Param(Constant.PARAM_KEY) Object obj, @Param(Constant.COND_KEY) Where where) {
 		SqlBuildParam paramWrapper=new SqlBuildParam.Builder(obj).build();
 		SmartTableInfo smti = paramWrapper.getSmti();
 		
@@ -87,7 +79,7 @@ public class MapperSqlProvider {
 		}
 		return sql;
 	}
-	public String inserts(@Param(Constant.PARAM_KEY) Object obj) {
+	public  static String inserts(@Param(Constant.PARAM_KEY) Object obj) {
 		SqlBuildParam paramWrapper=new SqlBuildParam.Builder(obj).build();
 		SmartTableInfo smti = paramWrapper.getSmti();
 		String sql = null;
@@ -99,7 +91,7 @@ public class MapperSqlProvider {
 		return sql;
 	}
 
-	public String updateById(@Param(Constant.PARAM_KEY) Object obj) {
+	public static  String updateById(@Param(Constant.PARAM_KEY) Object obj) {
 		SqlBuildParam paramWrapper=new SqlBuildParam.Builder(obj).build();
 		SmartTableInfo smti = paramWrapper.getSmti();
 		String sql = null;
@@ -111,7 +103,7 @@ public class MapperSqlProvider {
 		}
 		return sql;
 	}
-	public String updateBySets(@Param(Constant.TABLE_KEY) Class<?> tableClazz,@Param(Constant.PARAM_KEY) Object obj, @Param(Constant.COND_KEY) Where where) {
+	public  static String updateBySets(@Param(Constant.TABLE_KEY) Class<?> tableClazz,@Param(Constant.PARAM_KEY) Object obj, @Param(Constant.COND_KEY) Where where) {
 		SqlBuildParam paramWrapper=new SqlBuildParam.Builder(obj).setClazz(tableClazz).build();
 		SmartTableInfo smti = paramWrapper.getSmti();
 		String sql = null;
@@ -124,7 +116,7 @@ public class MapperSqlProvider {
 		return sql;
 	}
 
-	public String updateByWhere(@Param(Constant.PARAM_KEY) Object obj, @Param(Constant.COND_KEY) Where where) {
+	public static  String updateByWhere(@Param(Constant.PARAM_KEY) Object obj, @Param(Constant.COND_KEY) Where where) {
 		SqlBuildParam paramWrapper=new SqlBuildParam.Builder(obj).build();
 		SmartTableInfo smti = paramWrapper.getSmti();
 		String sql = null;
@@ -137,7 +129,7 @@ public class MapperSqlProvider {
 		return sql;
 	}
 
-	public String deleteById(Object idV) {
+	public static  String deleteById(Object idV) {
 		Class<?> cl=SmartConfiguration.currentModel();
 		SqlBuildParam paramWrapper=new SqlBuildParam.Builder(idV).setClazz(cl).build();
 		SmartTableInfo smti;
