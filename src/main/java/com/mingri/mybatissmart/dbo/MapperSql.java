@@ -7,9 +7,9 @@ import com.mingri.langhuan.cabinet.constant.LogicCmp;
 import com.mingri.langhuan.cabinet.constant.NexusCmp;
 import com.mingri.langhuan.cabinet.constant.ValTypeEnum;
 import com.mingri.langhuan.cabinet.tool.StrTool;
-import com.mingri.mybatissmart.MybatisSmartException;
 import com.mingri.mybatissmart.barracks.Constant;
 import com.mingri.mybatissmart.barracks.DialectEnum;
+import com.mingri.mybatissmart.barracks.MybatisSmartException;
 import com.mingri.mybatissmart.barracks.SqlKwd;
 import com.mingri.mybatissmart.provider.MapperSqlProvider;
 

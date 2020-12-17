@@ -17,10 +17,10 @@ import com.mingri.langhuan.cabinet.constant.ObjTypeEnum;
 import com.mingri.langhuan.cabinet.constant.ValTypeEnum;
 import com.mingri.langhuan.cabinet.tool.ClassTool;
 import com.mingri.langhuan.cabinet.tool.StrTool;
-import com.mingri.mybatissmart.MybatisSmartException;
 import com.mingri.mybatissmart.annotation.SmartColumn;
 import com.mingri.mybatissmart.annotation.SmartTable;
 import com.mingri.mybatissmart.barracks.DialectEnum;
+import com.mingri.mybatissmart.barracks.MybatisSmartException;
 import com.mingri.mybatissmart.dbo.MapperSql.Select;
 import com.mingri.mybatissmart.dbo.MapperSql.WhereSql;
 

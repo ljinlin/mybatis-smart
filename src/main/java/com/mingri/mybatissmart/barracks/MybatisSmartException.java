@@ -1,4 +1,4 @@
-package com.mingri.mybatissmart;
+package com.mingri.mybatissmart.barracks;
 
 
 public class MybatisSmartException extends RuntimeException {

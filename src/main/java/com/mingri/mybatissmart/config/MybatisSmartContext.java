@@ -1,9 +1,10 @@
-package com.mingri.mybatissmart;
+package com.mingri.mybatissmart.config;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -36,13 +37,14 @@ import com.mingri.mybatissmart.annotation.SmartTable;
 import com.mingri.mybatissmart.barracks.Constant;
 import com.mingri.mybatissmart.barracks.DialectEnum;
 import com.mingri.mybatissmart.barracks.IdtacticsEnum;
+import com.mingri.mybatissmart.barracks.MybatisSmartException;
 import com.mingri.mybatissmart.barracks.Tool;
 import com.mingri.mybatissmart.dbo.SmartColumnInfo;
 import com.mingri.mybatissmart.dbo.SmartTableInfo;
+import com.mingri.mybatissmart.ex.SmartKeyGenerator;
 import com.mingri.mybatissmart.mapper.InsertSmartMapper;
 import com.mingri.mybatissmart.mapper.InternalMapper;
 import com.mingri.mybatissmart.mapper.SmartMapper;
-import com.mingri.mybatissmart.provider.SqlInterceptor;
 
 /**
  * mybatis-smart 上下文,单例的
@@ -53,7 +55,7 @@ public class MybatisSmartContext {
 
 	private final static Logger LOGGER = LoggerFactory.getLogger(MybatisSmartContext.class);
 
-	private List<MybatisSmartConfiguration> configurations;
+	private List<MappingConfig> mappingConfigList=new ArrayList<>();
 
 	private static SequenceGenerate sequenceGenerate;
 
@@ -79,32 +81,27 @@ public class MybatisSmartContext {
 		MybatisSmartContext.sequenceGenerate = sequenceGenerate;
 	}
 
-	public List<MybatisSmartConfiguration> getConfigurations() {
-		return configurations;
+	public List<MappingConfig> getMappingConfigList() {
+		return Collections.unmodifiableList(mappingConfigList);
 	}
 
-	public void setConfigurations(List<MybatisSmartConfiguration> configurations) {
-		this.configurations = configurations;
-	}
-
-	public void addSqlInterceptor() {
-		SqlSessionFactory sessionFactory = null;
-		for (MybatisSmartConfiguration configuration : configurations) {
-			sessionFactory = configuration.getSqlSessionFactory();
-			SqlInterceptor interceptor = new SqlInterceptor();
-			sessionFactory.getConfiguration().addInterceptor(interceptor);
-		}
+	public void setMappingConfigList(List<MappingConfig> mappingConfigList) {
+		this.mappingConfigList = mappingConfigList;
 	}
 	
+	public void addConfig(MappingConfig mappingConfig) {
+		mappingConfigList.add(mappingConfig);
+	}
+	
+
 	
 	@PostConstruct
 	public void start() {
 		try {
 			LOAD_STATUS=0;
-			addSqlInterceptor();
 			org.apache.ibatis.session.Configuration ibatisConfiguration = null;
 			SqlSessionFactory sessionFactory = null;
-			for (MybatisSmartConfiguration configuration : configurations) {
+			for (MappingConfig configuration : mappingConfigList) {
 				sessionFactory = configuration.getSqlSessionFactory();
 				ibatisConfiguration = sessionFactory.getConfiguration();
 				if (!ibatisConfiguration.hasMapper(InternalMapper.class)) {
@@ -113,6 +110,7 @@ public class MybatisSmartContext {
 				scanSmartTable(configuration);
 			}
 			replaceKeyGenerator();
+//			addSqlInterceptor();
 		} catch (Exception e) {
 			LOGGER.error("捕获到异常,打印日志", e);
 			throw new MybatisSmartException(e.getLocalizedMessage() + "---" + e.getMessage());
@@ -269,7 +267,7 @@ public class MybatisSmartContext {
 	/**
 	 * 扫描数据模型
 	 */
-	private void scanSmartTable(MybatisSmartConfiguration configuration) throws ClassNotFoundException, SQLException {
+	private void scanSmartTable(MappingConfig configuration) throws ClassNotFoundException, SQLException {
 		String mdpkg = configuration.getTablePackages();
 		SqlSessionFactory sqlSessionFactory = configuration.getSqlSessionFactory();
 		DialectEnum dialect = DialectEnum.ofName(configuration.getDialect());
@@ -366,7 +364,7 @@ public class MybatisSmartContext {
 		org.apache.ibatis.session.Configuration ibatisConfiguration = null;
 		Field fi = ClassTool.searchDecararedField(MappedStatement.class, "keyGenerator");
 		fi.setAccessible(true);
-		for (MybatisSmartConfiguration configuration : configurations) {
+		for (MappingConfig configuration : mappingConfigList) {
 			ibatisConfiguration = configuration.getSqlSessionFactory().getConfiguration();
 			Collection<MappedStatement> stList = ibatisConfiguration.getMappedStatements();
 			for (Object obj : stList) {

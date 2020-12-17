@@ -1,15 +1,19 @@
 package com.mingri.mybatissmart.provider;
 
+import javax.annotation.Resource;
+
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.mapping.MappedStatement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.mingri.mybatissmart.MybatisSmartContext;
 import com.mingri.mybatissmart.barracks.Constant;
 import com.mingri.mybatissmart.barracks.SqlPrint;
+import com.mingri.mybatissmart.config.MybatisSmartContext;
 import com.mingri.mybatissmart.dbo.SetSql;
 import com.mingri.mybatissmart.dbo.SmartTableInfo;
 import com.mingri.mybatissmart.dbo.Where;
+import com.mingri.mybatissmart.ex.SmartConfiguration;
 
 /**
  * mapper sql 提供者
@@ -20,15 +24,14 @@ public class MapperSqlProvider {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MapperSqlProvider.class);
 	
-	 static final ThreadLocal<Class<?>> MODEL=new ThreadLocal<>();
-	 static final ThreadLocal<String> MAPPER_ID=new ThreadLocal<>();
-	
 
-//	public String select(@Param(Constant.PARAM_KEY) Object obj, @Param(Constant.COND_KEY) Where where) {
-		public String select(Object obj) {
-			Class<?> cl=MODEL.get();
-			String ss=MAPPER_ID.get();
-			System.out.println(cl+"-----"+ss);
+	
+	 @Resource
+	 private MappedStatement st;
+	 
+		public  String select(Object obj) {
+			System.err.println("============="+Thread.currentThread().getId()+"=====MapperSqlProvider---");
+			Class<?> cl=SmartConfiguration.currentModel();
 			String sql = null;
 			try {
 		SqlBuildParam paramWrapper=new SqlBuildParam.Builder(obj).build();
@@ -45,7 +48,7 @@ public class MapperSqlProvider {
 	
 	public String selectById(Object idV) {
 		SmartTableInfo smti;
-		Class<?> cl=MODEL.get();
+		Class<?> cl=SmartConfiguration.currentModel();
 		String sql = null;
 		try {
 			smti = MybatisSmartContext.getSmartTableInfo(cl);
@@ -59,7 +62,7 @@ public class MapperSqlProvider {
 
 	public String count(Object obj,@Param(Constant.COND_KEY) Where where) {
 		String sql = null;
-		Class<?> cl=MODEL.get();
+		Class<?> cl=SmartConfiguration.currentModel();
 		try {
 			SmartTableInfo smti = MybatisSmartContext.getSmartTableInfo(cl);			
 			sql = smti.getCountByWhereSql(obj, where);
@@ -134,7 +137,8 @@ public class MapperSqlProvider {
 		return sql;
 	}
 
-	public String deleteById(Object idV, Class<?> cl) {
+	public String deleteById(Object idV) {
+		Class<?> cl=SmartConfiguration.currentModel();
 		SqlBuildParam paramWrapper=new SqlBuildParam.Builder(idV).setClazz(cl).build();
 		SmartTableInfo smti;
 		String sql = null;

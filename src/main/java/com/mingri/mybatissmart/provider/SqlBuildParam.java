@@ -6,10 +6,11 @@ import org.apache.ibatis.binding.MapperMethod.ParamMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.mingri.mybatissmart.MybatisSmartContext;
 import com.mingri.mybatissmart.barracks.Constant;
+import com.mingri.mybatissmart.config.MybatisSmartContext;
 import com.mingri.mybatissmart.dbo.SmartTableInfo;
 import com.mingri.mybatissmart.dbo.Where;
+import com.mingri.mybatissmart.ex.SmartConfiguration;
 
 /**
  *  mapper sql构建所需要的参数类
@@ -93,7 +94,7 @@ public class SqlBuildParam {
 				param = providerParam;
 			}
 			
-			this.clazz=MapperSqlProvider.MODEL.get();
+			this.clazz=SmartConfiguration.currentModel();
 			SmartTableInfo smti = MybatisSmartContext.getSmartTableInfo(this.clazz);
 			paramWrapper.setClazz(this.clazz);
 			paramWrapper.setSmti(smti);

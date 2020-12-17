@@ -1,8 +1,6 @@
-package com.mingri.mybatissmart;
+package com.mingri.mybatissmart.config;
 
 import java.util.Map;
-
-import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import com.mingri.mybatissmart.barracks.SqlPrint;
 
@@ -11,9 +9,7 @@ import com.mingri.mybatissmart.barracks.SqlPrint;
  * 
  * @author ljl 2019年11月30日
  */
-@ConfigurationProperties(prefix = MybatisSmartProperties.MYBATIS_SMART_PREFIX)
-public class MybatisSmartProperties {
-	static final String MYBATIS_SMART_PREFIX = "mybatis-smart";
+public class SmartProperties {
 
 
 	/**

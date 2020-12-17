@@ -15,12 +15,12 @@ import com.mingri.langhuan.cabinet.constant.ValTypeEnum;
 import com.mingri.langhuan.cabinet.tool.ClassTool;
 import com.mingri.langhuan.cabinet.tool.CollectionTool;
 import com.mingri.langhuan.cabinet.tool.StrTool;
-import com.mingri.mybatissmart.MybatisSmartContext;
 import com.mingri.mybatissmart.annotation.SmartColumn;
 import com.mingri.mybatissmart.annotation.SmartTable;
 import com.mingri.mybatissmart.barracks.Constant;
 import com.mingri.mybatissmart.barracks.IdtacticsEnum;
 import com.mingri.mybatissmart.barracks.SqlKwd;
+import com.mingri.mybatissmart.config.MybatisSmartContext;
 import com.mingri.mybatissmart.dbo.MapperSql.WhereSql;
 
 class MapperSqlTool {

@@ -6,7 +6,6 @@ import java.util.List;
 
 import org.apache.ibatis.binding.MapperMethod.ParamMap;
 
-import com.mingri.mybatissmart.MybatisSmartException;
 import com.mingri.mybatissmart.annotation.SmartTable;
 
 public class Tool {

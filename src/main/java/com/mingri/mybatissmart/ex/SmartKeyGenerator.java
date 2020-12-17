@@ -1,4 +1,4 @@
-package com.mingri.mybatissmart;
+package com.mingri.mybatissmart.ex;
 
 import java.sql.Statement;
 
@@ -10,6 +10,7 @@ import org.apache.ibatis.mapping.MappedStatement;
 import com.mingri.mybatissmart.barracks.Constant;
 import com.mingri.mybatissmart.barracks.IdtacticsEnum;
 import com.mingri.mybatissmart.barracks.Tool;
+import com.mingri.mybatissmart.config.MybatisSmartContext;
 import com.mingri.mybatissmart.dbo.SmartTableInfo;
 
 public class SmartKeyGenerator extends Jdbc3KeyGenerator {
