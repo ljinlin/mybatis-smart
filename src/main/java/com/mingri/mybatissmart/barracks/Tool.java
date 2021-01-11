@@ -7,6 +7,7 @@ import java.util.List;
 import org.apache.ibatis.binding.MapperMethod.ParamMap;
 
 import com.mingri.mybatissmart.MybatisSmartException;
+import com.mingri.mybatissmart.annotation.SmartTable;
 
 public class Tool {
 
@@ -59,4 +60,10 @@ public class Tool {
 		return null;
 	}
 
+	public static String getTableName(SmartTable tableInfo) {
+		String tableName=tableInfo.value();
+		return tableName.isEmpty()?tableInfo.name():tableName;
+		
+	}
+	
 }

@@ -8,17 +8,18 @@ import com.mingri.mybatissmart.dbo.SetSql;
 import com.mingri.mybatissmart.dbo.Where;
 import com.mingri.mybatissmart.provider.MapperSqlProvider;
 
-public interface UpdateSmartMapper<E>{
+public interface UpdateMapper<E>{
 	
 	@UpdateProvider(method = "updateById", type = MapperSqlProvider.class)
-	int updateById(@Param(Constant.PARAM_KEY) Object e);
+	int updateById(@Param(Constant.PARAM_KEY) E e);
 
-	@UpdateProvider(method = "updateByWhere", type = MapperSqlProvider.class)
-	int updateByWhere(@Param(Constant.PARAM_KEY) Object e,
-			@Param(Constant.COND_KEY) Where filterSqlBuild);
-	
 	@UpdateProvider(method = "updateBySets", type = MapperSqlProvider.class)
-	int updateBySets(@Param(Constant.TABLE_KEY) Class<E> clazz,@Param(Constant.PARAM_KEY) SetSql sets,
-			@Param(Constant.COND_KEY) Where filterSqlBuild);
+	int updateBySets(@Param(Constant.PARAM_KEY) SetSql sets,
+			@Param(Constant.COND_KEY) Where where);
+	
+	@UpdateProvider(method = "updateByWhere", type = MapperSqlProvider.class)
+	int updateByWhere(@Param(Constant.PARAM_KEY) E e,
+			@Param(Constant.COND_KEY) Where where);
+	
 
 }

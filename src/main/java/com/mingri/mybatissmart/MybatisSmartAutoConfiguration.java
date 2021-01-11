@@ -64,9 +64,10 @@ public class MybatisSmartAutoConfiguration {
 			sqlSessionFactoryBeanName = entry.getKey();
 			sqlSessionFactory = StrTool.isEmpty(sqlSessionFactoryBeanName) ? dftSqlSessionFactory
 					: sessionFactoryMap.get(sqlSessionFactoryBeanName);
-			Assert.notNull(sqlSessionFactory, "springContext中不存的sqlSessionFactoryBean：" + sqlSessionFactoryBeanName);
-			configurations.add(new MybatisSmartConfiguration(entry.getValue(), sqlSessionFactory, null,
-					sqlSessionFactoryBeanName));
+			Assert.notNull(sqlSessionFactory, "spring IOC 中不存的sqlSessionFactory：" + sqlSessionFactoryBeanName);
+			MybatisSmartConfiguration conf=new MybatisSmartConfiguration(entry.getValue(), sqlSessionFactory);
+			conf.setSqlSessionFactoryBeanName(sqlSessionFactoryBeanName);
+			configurations.add(conf);
 		}
 
 		return configurations;

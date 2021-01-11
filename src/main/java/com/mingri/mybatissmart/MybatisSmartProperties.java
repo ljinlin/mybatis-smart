@@ -17,9 +17,11 @@ public class MybatisSmartProperties {
 
 
 	/**
-	 * 表映射实体扫描包:key:包，value:sessionFactory的beanName
+	 * 扫描表映射实体包:key:包，value:sessionFactory的beanName
 	 */
 	private Map<String, String> tablePackages;
+	
+	
 	private SqlPrint sqlPrint;
 	
 	public Map<String, String> getTablePackages() {

@@ -1,7 +1,7 @@
 package com.mingri.mybatissmart;
 
-import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Field;
+import java.lang.reflect.Type;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Collection;
@@ -23,6 +23,7 @@ import org.apache.ibatis.session.SqlSessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import com.mingri.langhuan.cabinet.algorithm.SequenceGenerate;
@@ -38,7 +39,7 @@ import com.mingri.mybatissmart.barracks.IdtacticsEnum;
 import com.mingri.mybatissmart.barracks.Tool;
 import com.mingri.mybatissmart.dbo.SmartColumnInfo;
 import com.mingri.mybatissmart.dbo.SmartTableInfo;
-import com.mingri.mybatissmart.mapper.InsertSmartMapper;
+import com.mingri.mybatissmart.mapper.InsertMapper;
 import com.mingri.mybatissmart.mapper.InternalMapper;
 import com.mingri.mybatissmart.mapper.SmartMapper;
 
@@ -55,6 +56,17 @@ public class MybatisSmartContext {
 
 	private static SequenceGenerate sequenceGenerate;
 
+
+	/**
+	 * 表类映射信息
+	 */
+	private static final Map<Class<?>, SmartTableInfo> SMART_TABLE_MAP = new HashMap<>();
+
+	private static final AtomicInteger SQL_INCR_COUNT = new AtomicInteger();
+
+	private volatile static int LOAD_STATUS = -1;
+
+	
 	public static SequenceGenerate getSequenceGenerate() {
 		if (sequenceGenerate == null) {
 			sequenceGenerate = SequenceGenerate.getInstance();
@@ -74,16 +86,11 @@ public class MybatisSmartContext {
 		this.configurations = configurations;
 	}
 
-	/**
-	 * 表类映射信息
-	 */
-	private static final Map<Class<?>, SmartTableInfo> SMART_TABLE_MAP = new HashMap<>();
-
-	private static final AtomicInteger SQL_INCR_COUNT = new AtomicInteger();
-
+	
 	@PostConstruct
 	public void start() {
 		try {
+			LOAD_STATUS=0;
 			org.apache.ibatis.session.Configuration ibatisConfiguration = null;
 			SqlSessionFactory sessionFactory = null;
 			for (MybatisSmartConfiguration configuration : configurations) {
@@ -98,27 +105,51 @@ public class MybatisSmartContext {
 		} catch (Exception e) {
 			LOGGER.error("捕获到异常,打印日志", e);
 			throw new MybatisSmartException(e.getLocalizedMessage() + "---" + e.getMessage());
+		} finally {
+			LOAD_STATUS = 1;
 		}
 	}
 
 	public static SmartTableInfo getSmartTableInfo(Class<?> tableClass) {
-		// 。没有scanMapping
+		// 没有scanMapping
 		SmartTableInfo smti = SMART_TABLE_MAP.get(tableClass);
-		Class<?> tmpCl = tableClass;
 		if (smti != null) {
 			return smti;
-		} else {
-			while (tmpCl != null && tmpCl != Object.class) {
-				tmpCl = tmpCl.getSuperclass();
-				if (tmpCl.getAnnotation(SmartTable.class) != null) {// 。 拿父类的
-					smti = SMART_TABLE_MAP.get(tmpCl);
-					if (smti != null) {
-						return smti;
-					}
+		}
+
+		Class<?> tmpTableClass = tableClass;
+		checkisNeedWaitLoad();
+		while (tmpTableClass != null && tmpTableClass != Object.class) {
+			tmpTableClass = tmpTableClass.getSuperclass();
+			if (tmpTableClass.getAnnotation(SmartTable.class) != null) {// 。 拿父类的
+				smti = SMART_TABLE_MAP.get(tmpTableClass);
+				if (smti != null) {
+					return smti;
 				}
 			}
-			throw new MybatisSmartException(StrTool.concat("Class:", tableClass.getCanonicalName(), " 或者其父类 没有配置注解:@",
-					SmartTable.class.getSimpleName()).toString());
+		}
+		throw new MybatisSmartException(StrTool
+				.concat("Class:", tableClass.getCanonicalName(), " 或者其父类 没有配置注解:@", SmartTable.class.getSimpleName())
+				.toString());
+	}
+
+	private static void checkisNeedWaitLoad() {
+		int waitNum = 1;
+		while (LOAD_STATUS==-1 && waitNum < 800) {
+			try {
+				Thread.sleep(50);
+				waitNum++;
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		if(LOAD_STATUS==-1) {
+			LOAD_STATUS = 1;
+			throw new MybatisSmartException("未扫描实体类和表的映射关系");
+		}
+		if(LOAD_STATUS==0) {
+			LOAD_STATUS = 1;
+			throw new MybatisSmartException("扫描实体类和表的映射关系超时");
 		}
 	}
 
@@ -152,7 +183,8 @@ public class MybatisSmartContext {
 
 	private void validSmartTable(SmartTable tableInfo) {
 		String idFieldName = tableInfo.idFieldName();
-		if (tableInfo.value().length() == 0) {
+		String tableName = Tool.getTableName(tableInfo);
+		if (tableName.isEmpty()) {
 			throw new MybatisSmartException(SmartTable.class.getCanonicalName() + " 的value 不能为空");
 		}
 
@@ -176,12 +208,14 @@ public class MybatisSmartContext {
 			return null;
 		}
 		validSmartTable(tableInfo);
+		String tableName = Tool.getTableName(tableInfo);
+		Map<String, String> fieldColNameDbMap = getFieldAndColumnNameMap(tableName, sqlSessionFactory);
 
-		Map<String, String> fieldAndColumnName = getFieldAndColumnNameMap(tableInfo.value(), sqlSessionFactory);
-		if (fieldAndColumnName == null || fieldAndColumnName.isEmpty()) {
+		if (fieldColNameDbMap == null || fieldColNameDbMap.isEmpty()) {
 			LOGGER.warn("---------------扫描警告：{} 没有映射表", smartTableClass);
 			return null;
 		}
+
 		List<Field> fieldList = ClassTool.getDecararedFields(smartTableClass, false);
 		LinkedHashMap<String, SmartColumnInfo> columnFieldMap = new LinkedHashMap<>();
 
@@ -190,20 +224,21 @@ public class MybatisSmartContext {
 			SmartColumn columnInfo = field.getAnnotation(SmartColumn.class);
 			String columnName = columnInfo == null ? StrTool.EMPTY
 					: Tool.unifiedColumnName(StrTool.toString(columnInfo.value()));
+
 			if (columnName.isEmpty()) {
 				// 。根据驼峰规则自动映射
-				columnName = fieldAndColumnName.get(field.getName());
+				columnName = fieldColNameDbMap.get(field.getName());
 				if (columnName == null) {
 					// 。 该字段没有映射的列
 					continue;
 				}
 			} else {
 				// 。根据注解配置映射
-				if (!fieldAndColumnName.containsValue(columnName)) {
-					throw new MybatisSmartException(
-							StrTool.concat(tableInfo.value(), " 表中没有字段:", columnName).toString());
+				if (!fieldColNameDbMap.containsValue(columnName)) {
+					throw new MybatisSmartException(StrTool.concat(tableName, " 表中没有字段:", columnName).toString());
 				}
 			}
+
 			SmartColumnInfo smci = columnFieldMap.get(columnName);
 			if (smci == null) {
 				columnFieldMap.put(columnName, new SmartColumnInfo(field, columnInfo));
@@ -295,20 +330,21 @@ public class MybatisSmartContext {
 	 * 获取java字段名称和数据库字段名称
 	 * 
 	 * @param tableName 表名
-	 * @return key:fieldName val:columnName
+	 * @return key:fieldName(columnName转驼峰后的name) val:columnName（大写）
 	 */
 	private Map<String, String> getFieldAndColumnNameMap(String tableName, SqlSessionFactory sqlSessionFactory) {
 		List<String> columns = selectColumns(tableName, sqlSessionFactory);
 		Map<String, String> columnsCamel = new HashMap<>();
 		columns.forEach(column -> {
 			String columnName = Tool.unifiedColumnName(column);
-			columnsCamel.put(StrTool.camel(columnName), columnName);
+			String fieldName = StrTool.camel(columnName);
+			columnsCamel.put(fieldName, columnName);
 		});
 		return columnsCamel;
 	}
 
 	/**
-	 * 更换id生成器
+	 * 为InsertSmartMapper 子类更换id生成器
 	 * 
 	 * @author jinlin Li
 	 */
@@ -337,27 +373,26 @@ public class MybatisSmartContext {
 					}
 					int index = resource.indexOf(".java");
 					resource = FileTool.dirToPkg(resource.substring(0, index));
-					AnnotatedType[] annotatedTypes = Class.forName(resource).getAnnotatedInterfaces();
-					if (annotatedTypes == null || annotatedTypes.length != 1) {
+
+					Class<?> mapperClazz = Class.forName(resource);
+					boolean isInsertMapper = SmartMapper.class.isAssignableFrom(mapperClazz)
+							|| InsertMapper.class.isAssignableFrom(mapperClazz);
+					if (isInsertMapper == false) {
 						continue;
 					}
-					AnnotatedType annotatedType = annotatedTypes[0];
-					resource = annotatedType.getType().getTypeName();
 
-					index = resource.indexOf(SmartMapper.class.getName());
-					Class<?> parentMapper = SmartMapper.class;
-					if (index == -1) {
-						index = resource.indexOf(InsertSmartMapper.class.getName());
-						if (index == -1) {
-							parentMapper = InsertSmartMapper.class;
-							continue;
+					List<Type> types = ClassTool.getExtendGenericity(mapperClazz, SmartMapper.class);
+					if (types.isEmpty()) {
+						types = ClassTool.getExtendGenericity(mapperClazz, InsertMapper.class);
+						if (types.isEmpty()) {
+							Assert.notEmpty(types, "mapper：" + mappedStatement.getResource() + "没有设定泛型！！！");
 						}
 					}
+
 					isSmartSubMapper = true;
 					Class<?> tableClazz = null;
 					try {
-						resource = resource.substring(parentMapper.getName().length() + 1, resource.length() - 1);
-						tableClazz = Class.forName(resource);
+						tableClazz = Class.forName(types.get(0).getTypeName());
 
 						SmartTableInfo smtb = getSmartTableInfo(tableClazz);
 						if (smtb == null) {
@@ -370,8 +405,6 @@ public class MybatisSmartContext {
 						}
 					} catch (Exception e) {
 						if (tableClazz == null) {
-							LOGGER.error("mapper：", mappedStatement.getResource(), "没有设定泛型！！！", e);
-						} else {
 							LOGGER.error("扫描", mappedStatement.getResource(), "的泛型出错", e);
 						}
 						continue;

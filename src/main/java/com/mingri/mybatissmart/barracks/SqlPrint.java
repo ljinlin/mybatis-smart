@@ -2,8 +2,16 @@ package com.mingri.mybatissmart.barracks;
 
 import org.slf4j.Logger;
 
+/**
+ * sql打印配置
+ * @author jinlin Li
+ * 2021年1月8日
+ */
 public class SqlPrint {
 
+	/**
+	 * 是否打印
+	 */
 	private boolean isPrint = true;
 
 	private static SqlPrint INSTANCE;

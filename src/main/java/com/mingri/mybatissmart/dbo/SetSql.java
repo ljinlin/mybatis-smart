@@ -41,6 +41,7 @@ public class SetSql {
 			setSql = new SetSql();
 			set(column, value);
 		}
+		
 		/**
 		 * 当值为null,""时，是否也set
 		 * 
